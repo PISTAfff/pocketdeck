@@ -161,10 +161,12 @@ const ANATOMY_CAMERA: Record<DeckPart, CameraKeyframe> = {
     fov: 22,
   },
   grip: {
-    // Pure top-down on the grip stripe.
-    position: [0.1, 4.2, 3.4],
-    target: [0.2, 0, 0],
-    fov: 24,
+    // Near-overhead so the grip face fills the frame and the pattern is
+    // the subject. Tiny Z offset keeps the camera's up vector unambiguous
+    // (a true straight-down shot would be degenerate with up=Y).
+    position: [1.1, 5.0, 0.6],
+    target: [1.1, 0, 0],
+    fov: 26,
   },
 };
 
@@ -195,9 +197,12 @@ const CONFIGURATOR_CAMERA: Record<DeckPart, CameraKeyframe> = {
     fov: 24,
   },
   grip: {
-    position: [-0.1, 4.4, 3.4],
-    target: [0.4, 0, 0],
-    fov: 24,
+    // Near-overhead so the grip face fills the frame and the pattern is
+    // the subject. Camera sits almost directly above the deck so the user
+    // sees the stripes / rings / dots on full display.
+    position: [1.5, 5.2, 0.7],
+    target: [1.5, 0, 0],
+    fov: 28,
   },
 };
 
@@ -221,13 +226,12 @@ const CONFIGURATOR_DECK: Record<DeckPart, DeckKeyframe> = {
     scale: 0.5,
   },
   grip: {
-    // The grip step's job is to show the GRIP TOP (where the pattern
-    // lives), so the deck stays nearly flat with a small forward tilt.
-    // The previous -PI/2 rotation pointed the grip face AWAY from the
-    // camera, which made every pattern look identical because the user
-    // was actually staring at the deck plate's side.
+    // Deck stays completely flat so the grip surface is the only thing
+    // the user sees. Camera is near-overhead (CONFIGURATOR_CAMERA.grip
+    // sits straight above with a tiny Z offset), so the pattern fills
+    // the frame.
     position: [1.5, 0, 0],
-    rotation: [0.18, 0, 0],
+    rotation: [0, 0, 0],
     scale: 0.45,
   },
 };
@@ -254,9 +258,10 @@ const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
     scale: 0.42,
   },
   grip: {
+    // Flat deck so the grip face is the entire subject of the frame.
     position: [1.1, 0, 0],
-    rotation: [0.18, 0, 0],
-    scale: 0.38,
+    rotation: [0, 0, 0],
+    scale: 0.4,
   },
 };
 
