@@ -62,11 +62,13 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
     fov: 30,
   },
   configurator: {
-    // Camera looks at world origin so the deck (positioned upper-right in
-    // world space) appears in the upper-right of the screen.
-    position: [0, 0.4, 6.4],
+    // Camera pulled back enough that the deck (positioned upper-right in
+    // world space) fits entirely inside the visible frame. Looking at the
+    // world origin means a positive +X +Y world offset maps to upper-right
+    // on screen.
+    position: [0, 0.4, 7.4],
     target: [0, 0.3, 0],
-    fov: 30,
+    fov: 28,
   },
   tricks: {
     position: [4.8, 0.6, 6.8],
@@ -98,13 +100,13 @@ const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
     scale: 0.7,
   },
   configurator: {
-    // World-space upper-right position so the deck appears in the top-right
-    // of the viewport. Camera looks at the world origin (see configurator
-    // camera keyframe above), so the +X +Y offset translates directly to
-    // screen position.
-    position: [1.9, 1.0, 0],
-    rotation: [-0.18, 0.35, 0],
-    scale: 0.68,
+    // World-space upper-right position so the deck reads in the top-right
+    // of the viewport while the wizard UI takes left + bottom. Smaller
+    // scale + recentered X so the deck fits entirely inside the visible
+    // frame at the camera distance defined above.
+    position: [1.6, 0.85, 0],
+    rotation: [-0.18, 0.42, 0],
+    scale: 0.58,
   },
   tricks: {
     position: [0, 0.4, 0],

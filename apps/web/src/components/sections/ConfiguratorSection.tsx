@@ -244,7 +244,10 @@ export function ConfiguratorSection() {
     <section
       ref={sectionRef}
       id="configurator"
-      className="relative bg-ink-950"
+      // No background fill: the persistent canvas (z-0) needs to show
+      // through this section so the deck reads in the right column. The
+      // body is already ink-950, so the visual remains dark.
+      className="relative"
       style={{
         // Five steps means four "advances" * 100vh + one starting viewport.
         minHeight: `${PIN_VIEWPORTS * 100 + 100}vh`,
