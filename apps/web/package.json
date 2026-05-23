@@ -1,0 +1,43 @@
+{
+  "name": "@pocketdeck/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pocketdeck/types": "workspace:*",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
+    "@react-three/postprocessing": "^3.0.4",
+    "axios": "^1.7.9",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.0.0",
+    "gsap": "^3.13.0",
+    "lenis": "^1.3.0",
+    "next": "^16.2.6",
+    "postprocessing": "^6.36.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.184.0",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@types/three": "^0.184.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^16.2.6",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.2"
+  }
+}

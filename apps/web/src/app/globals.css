@@ -1,0 +1,96 @@
+@import 'tailwindcss';
+
+@theme {
+  /* PocketDeck palette: near-black canvas, off-white type, one warm accent. */
+  --color-ink-950: #07070a;
+  --color-ink-900: #0c0c10;
+  --color-ink-800: #14141a;
+  --color-ink-700: #1d1d24;
+  --color-bone-50: #f5f1ea;
+  --color-bone-100: #ece6d9;
+  --color-bone-200: #d8cfbd;
+  --color-bone-300: #b7ab92;
+  --color-ember-400: #ff7d3a;
+  --color-ember-500: #ff5b14;
+  --color-ember-600: #d94404;
+
+  --font-display: 'Inter Display', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-md: 0.5rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+
+  --shadow-glow:
+    0 0 40px rgb(255 91 20 / 0.18), 0 0 100px rgb(255 91 20 / 0.08);
+}
+
+/* Reset + base */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  background: var(--color-ink-950);
+  color: var(--color-bone-50);
+  font-family: var(--font-sans);
+  /* Custom cursor handles the pointer; hide native cursor where appropriate. */
+  cursor: none;
+}
+
+/* Devices without fine pointer (touch) keep the native cursor. */
+@media (pointer: coarse) {
+  html,
+  body {
+    cursor: auto;
+  }
+}
+
+::selection {
+  background: var(--color-ember-500);
+  color: var(--color-ink-950);
+}
+
+/* Smooth scroll is handled by Lenis — disable the native version so the
+   two don't fight. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* Persistent WebGL canvas sits behind all DOM content. */
+.scene-root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* DOM content sits above the canvas. */
+.page-root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Reusable utility for clip-path image reveals (used by sections). */
+@utility clip-reveal {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+}
+@utility clip-revealed {
+  clip-path: inset(0 0 0 0);
+}

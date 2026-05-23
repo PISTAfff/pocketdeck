@@ -1,0 +1,11 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Build scripts that are allowed to run during install.
+# These are necessary: esbuild (bundling), sharp (Next.js image optimization),
+# unrs-resolver (workspace resolver for the eslint flat config).
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "declaration": false,
+    "sourceMap": true,
+    "types": ["node"],
+    "paths": {
+      "@pocketdeck/types": ["../../packages/types/src/index.ts"],
+      "@pocketdeck/types/*": ["../../packages/types/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
