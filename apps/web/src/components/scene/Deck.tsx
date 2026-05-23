@@ -291,11 +291,12 @@ export function Deck() {
   const dimTruck = isDimmed(activeSection, highlightPart, 'truck');
   const dimWheel = isDimmed(activeSection, highlightPart, 'wheel');
 
-  // Glow the active part when a highlight is set (#20 in anatomy, #26 in
-  // configurator). The non-active parts dim simultaneously.
-  const glowing =
-    (activeSection === 'anatomy' || activeSection === 'configurator') &&
-    highlightPart !== null;
+  // Ember emissive glow on the active part. ONLY enabled in Anatomy where
+  // the goal is to showcase the part being described and the user isn't
+  // judging its color. In the Configurator we keep emissive off so dark
+  // picks (Noir #0b0b0d, Midnight #1f2238, Gunmetal #3a3d44) read at
+  // their true base color instead of being washed into ember.
+  const glowing = activeSection === 'anatomy' && highlightPart !== null;
   const glowDeck = glowing && highlightPart === 'deck';
   const glowGrip = glowing && highlightPart === 'grip';
   const glowTruck = glowing && highlightPart === 'truck';

@@ -1,46 +1,53 @@
 'use client';
 
 /**
- * Lighting, moody three-point setup for the procedural fingerboard.
+ * Lighting, three-point rig for the procedural fingerboard.
  *
- * - Ambient base so shadow side never goes black
- * - Warm key light from upper-front-right
- * - Cool rim light from upper-back-left
- * - Soft fill from below to lift the underside
- * - ContactShadows under the deck to ground it
+ * Rebalanced for color fidelity: the previous rig had a warm key at
+ * intensity 2.6 with strong amber tint (#ffd0a8) which was overpowering
+ * the diffuse on dark materials. Picking Noir (#0b0b0d) read as warm
+ * amber on screen, not black. New ratios:
+ *   - ambient bumped to 0.45 with a neutral cool tone, so the shadow
+ *     side stays readable but doesn't pick up an unintended hue
+ *   - key drops to 1.5 with a much softer warm (#fff3e0). Still cinematic
+ *     but doesn't drown dark surfaces in amber
+ *   - rim drops to 1.0 with a slightly less saturated cool
+ *   - the ember underglow shrinks to 0.3 intensity — a hint, not a wash
+ *
+ * The result: Noir reads as black, Midnight as deep blue, Gunmetal as
+ * grey, while the warm/cool/ember accents still give the scene mood.
  */
 import { ContactShadows } from '@react-three/drei';
 
 export function Lighting() {
   return (
     <>
-      <ambientLight intensity={0.35} color="#dfe1eb" />
+      <ambientLight intensity={0.45} color="#e0e3ec" />
 
-      {/* Warm key light. */}
+      {/* Key light, gentle warm, top-front-right. */}
       <directionalLight
         position={[4.5, 6, 5]}
-        intensity={2.6}
-        color="#ffd0a8"
+        intensity={1.5}
+        color="#fff3e0"
         castShadow={false}
       />
 
-      {/* Cool rim/back light. */}
+      {/* Rim / back light, cool tone for separation. */}
       <directionalLight
         position={[-5, 3.5, -4]}
-        intensity={1.8}
-        color="#8aa0ff"
+        intensity={1.0}
+        color="#a4b8ff"
       />
 
-      {/* Soft underglow / fill. */}
+      {/* Ember underglow, just a hint of brand accent from below. */}
       <pointLight
         position={[0, -2.5, 2]}
-        intensity={0.6}
+        intensity={0.3}
         color="#ff7d3a"
-        distance={9}
+        distance={7}
         decay={2}
       />
 
-      {/* Ground the deck visually. */}
       <ContactShadows
         position={[0, -0.7, 0]}
         opacity={0.55}
