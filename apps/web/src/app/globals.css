@@ -6,7 +6,9 @@
   --color-ink-900: #0c0c10;
   --color-ink-800: #14141a;
   --color-ink-700: #1d1d24;
-  --color-bone-50: #f5f1ea;
+  --color-ink-600: #2a2a32;
+  /* Pure-ish bone white for high-contrast body copy (#57). */
+  --color-bone-50: #f5f5f0;
   --color-bone-100: #ece6d9;
   --color-bone-200: #d8cfbd;
   --color-bone-300: #b7ab92;
@@ -15,24 +17,43 @@
   --color-ember-500: #ff5b14;
   --color-ember-600: #d94404;
 
-  /* next/font on <html> injects:
-       --font-inter        (body / mid-weight)
-       --font-jetbrains    (mono captions)
-       --font-anton        (condensed display, big headlines)
-       --font-archivo-black (chunky black-weight grotesque, stickers + trick captions)
-     We wire those into Tailwind font tokens here. */
+  /* Fonts (next/font on the <html> element injects --font-inter,
+     --font-jetbrains, --font-anton, --font-archivo-black). */
   --font-display: var(--font-anton), 'Bebas Neue', 'Oswald', 'Helvetica Neue', sans-serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-black: var(--font-archivo-black), 'Helvetica Neue', sans-serif;
 
+  /* Spacing scale (#2): 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 / 96 / 128.
+     Tailwind 4 keys these by integer x 0.25rem so we mirror with explicit
+     tokens for documentation. Use t-shirt aliases for component code. */
+  --space-1: 0.25rem;  /* 4  */
+  --space-2: 0.5rem;   /* 8  */
+  --space-3: 0.75rem;  /* 12 */
+  --space-4: 1rem;     /* 16 */
+  --space-6: 1.5rem;   /* 24 */
+  --space-8: 2rem;     /* 32 */
+  --space-12: 3rem;    /* 48 */
+  --space-16: 4rem;    /* 64 */
+  --space-24: 6rem;    /* 96 */
+  --space-32: 8rem;    /* 128 */
+
+  /* Type leading scale (#4). */
+  --leading-display: 1.05;
+  --leading-sub-display: 1.15;
+  --leading-body: 1.55;
+  --leading-caption: 1.45;
+
   --radius-md: 0.5rem;
   --radius-lg: 0.875rem;
   --radius-xl: 1.25rem;
+  --radius-full: 9999px;
 
   --shadow-glow:
     0 0 40px rgb(255 91 20 / 0.18), 0 0 100px rgb(255 91 20 / 0.08);
 }
+
+/* --- Base reset ----------------------------------------------------------- */
 
 * {
   -webkit-font-smoothing: antialiased;
@@ -45,6 +66,17 @@ body {
   color: var(--color-bone-50);
   font-family: var(--font-sans);
   cursor: none;
+  /* No horizontal scroll anywhere (#5). */
+  overflow-x: hidden;
+}
+
+main {
+  overflow-x: hidden;
+}
+
+body {
+  /* Apply the body leading globally (#4); display utilities override. */
+  line-height: var(--leading-body);
 }
 
 @media (pointer: coarse) {
@@ -59,6 +91,42 @@ body {
   color: var(--color-ink-950);
 }
 
+/* --- Focus rings (#7) ----------------------------------------------------- */
+/* 2px solid orange with 2px offset on every focusable element. Visible only
+   via keyboard navigation thanks to :focus-visible. */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--color-ember-500);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* --- Skip-to-content (#60) ------------------------------------------------ */
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 200;
+  transform: translateY(-200%);
+  background: var(--color-ember-500);
+  color: var(--color-ink-950);
+  padding: 0.6rem 1rem;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  transition: transform 0.2s ease-out;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+/* --- Lenis hooks ---------------------------------------------------------- */
+
 html.lenis,
 html.lenis body {
   height: auto;
@@ -72,6 +140,8 @@ html.lenis body {
 .lenis.lenis-stopped {
   overflow: clip;
 }
+
+/* --- Canvas / page stack -------------------------------------------------- */
 
 .scene-root {
   position: fixed;
@@ -90,22 +160,19 @@ html.lenis body {
 /* --- Street-aesthetic primitives ----------------------------------------- */
 
 /**
- * Film-grain overlay. SVG fractal noise is data-URL'd into a fixed pseudo-
- * element under the nav. Soft-light blends it over both the canvas and the
- * DOM, screen-mixing the brighter areas so the whole page reads "stock film"
- * instead of "premium product render."
+ * Film-grain overlay (#50). SVG fractal noise rendered into a fixed pseudo-
+ * element above the canvas. 3% opacity per the spec, mix-blend "overlay" so
+ * highlights and shadows both pick it up.
  */
 .grain-overlay {
   position: fixed;
   inset: 0;
   z-index: 40;
   pointer-events: none;
-  opacity: 0.18;
+  opacity: 0.06;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.96  0 0 0 0 0.95  0 0 0 0 0.91  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   background-size: 240px 240px;
-  /* Slowly drift the grain so it never feels static, but slow enough to be
-     subconscious rather than distracting. */
   animation: grain-drift 8s steps(8) infinite;
 }
 
@@ -117,10 +184,7 @@ html.lenis body {
   100% { background-position: 0 0; }
 }
 
-/**
- * Halftone dot field. A radial-gradient of tiny ember dots, masked by an
- * opacity gradient. Drop into a section as a positioned <div>.
- */
+/* Halftone field (used by hero corners + #56 card-corner accents). */
 @utility halftone {
   background-image: radial-gradient(
     rgba(255, 91, 20, 0.42) 1px,
@@ -130,23 +194,45 @@ html.lenis body {
 }
 
 /**
- * Sticker badge: chunky grotesque on a tilted card, with a soft drop shadow.
- * Pair with .sticker-tape for a strip of "tape" along one edge.
+ * Texture divider strip (#51): 12px tall band of grip-tape grain to sit
+ * between major sections. Uses the same noise filter as the grain overlay
+ * but darker, masked to a horizontal stripe.
+ */
+@utility texture-divider {
+  position: relative;
+  display: block;
+  height: 12px;
+  width: 100%;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='12'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='1.8 0.55' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.92  0 0 0 0 0.9  0 0 0 0 0.85  0 0 0 0.35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"),
+    linear-gradient(180deg, rgba(245, 245, 240, 0.04), rgba(7, 7, 10, 0.5));
+  background-size: 480px 12px, 100% 100%;
+  background-blend-mode: overlay, normal;
+  opacity: 0.55;
+}
+
+/**
+ * Sticker badge (#53): torn-edge SVG mask + slight rotation.
+ * - 1.5deg tilt for the "slap" feel
+ * - irregular polygon mask to imply a torn label
  */
 @utility sticker {
   display: inline-block;
-  padding: 0.4rem 0.85rem;
+  padding: 0.45rem 0.9rem;
   font-family: var(--font-black);
   font-size: 0.7rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   background: var(--color-bone-50);
   color: var(--color-ink-950);
-  border-radius: 4px;
-  transform: rotate(-3deg);
+  transform: rotate(-1.5deg);
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.45),
     inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  clip-path: polygon(
+    1% 18%, 4% 4%, 14% 0%, 32% 6%, 58% 1%, 86% 4%, 99% 12%,
+    98% 32%, 100% 58%, 97% 84%, 96% 96%, 84% 100%, 64% 96%,
+    36% 100%, 12% 96%, 2% 92%, 4% 64%, 1% 38%
+  );
 }
 
 @utility sticker-ember {
@@ -154,35 +240,132 @@ html.lenis body {
   color: var(--color-ink-950);
 }
 
-/** Tape strip, like masking tape laid across the section. */
+/**
+ * Tape strip kicker. Slightly rotated, mono caps, soft ember tint. Used as
+ * section kickers like "01 · MANIFESTO". Outline (not solid) per #8.
+ */
 @utility tape {
   position: relative;
   display: inline-block;
-  padding: 0.3rem 1rem;
+  padding: 0.35rem 1rem;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  background: rgba(255, 91, 20, 0.18);
+  background: rgba(255, 91, 20, 0.08);
   color: var(--color-ember-400);
   transform: rotate(-1.5deg);
-  border-left: 2px solid rgba(255, 91, 20, 0.5);
-  border-right: 2px solid rgba(255, 91, 20, 0.5);
+  border-left: 2px solid rgba(255, 91, 20, 0.45);
+  border-right: 2px solid rgba(255, 91, 20, 0.45);
+  border-top: 1px dashed rgba(255, 91, 20, 0.25);
+  border-bottom: 1px dashed rgba(255, 91, 20, 0.25);
 }
 
-/** Display headline preset: Anton, all caps tracking, condensed weight. */
+/* Display headline preset: Anton, all caps tracking, condensed weight. */
 @utility display-headline {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.005em;
-  line-height: 0.86;
+  line-height: var(--leading-display);
   text-transform: uppercase;
 }
 
+@utility sub-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  line-height: var(--leading-sub-display);
+  text-transform: uppercase;
+}
+
+/* Caption preset: tighter mono leading. */
+@utility caption {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  line-height: var(--leading-caption);
+  text-transform: uppercase;
+  color: var(--color-bone-200);
+}
+
+/**
+ * Text tint (#1): radial-gradient backdrop that fades from near-black at
+ * the center to transparent at the edges. Apply to text containers that
+ * sit in front of the 3D canvas so copy reads at AA contrast against the
+ * deck behind it.
+ */
+@utility text-tint {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1.5rem;
+    z-index: -1;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(7, 7, 10, 0.82) 0%,
+      rgba(7, 7, 10, 0.55) 45%,
+      rgba(7, 7, 10, 0) 75%
+    );
+    pointer-events: none;
+  }
+}
+
+/**
+ * Halftone corner (#56): a barely-visible halftone dot field in the
+ * top-right corner of a card. Apply via class on a positioned container.
+ */
+@utility halftone-corner {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 96px;
+    height: 96px;
+    pointer-events: none;
+    background-image: radial-gradient(
+      rgba(255, 91, 20, 0.32) 1px,
+      transparent 1.4px
+    );
+    background-size: 10px 10px;
+    -webkit-mask-image: radial-gradient(
+      closest-side at 100% 0,
+      #000 0%,
+      transparent 80%
+    );
+    mask-image: radial-gradient(
+      closest-side at 100% 0,
+      #000 0%,
+      transparent 80%
+    );
+    opacity: 0.55;
+    border-top-right-radius: inherit;
+  }
+}
+
+/* Legacy clip utilities (kept for any existing references). */
 @utility clip-reveal {
   clip-path: inset(0 0 100% 0);
   transition: clip-path 1.2s cubic-bezier(0.65, 0, 0.35, 1);
 }
 @utility clip-revealed {
   clip-path: inset(0 0 0 0);
+}
+
+/* --- Reduced motion (#59) -------------------------------------------------
+   Disables grain drift and any *animation that exceeds 0.4s. ScrollTrigger
+   pins / R3F animations are disabled at the component level by reading
+   matchMedia('(prefers-reduced-motion: reduce)').
+*/
+@media (prefers-reduced-motion: reduce) {
+  .grain-overlay {
+    animation: none;
+  }
+  * {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

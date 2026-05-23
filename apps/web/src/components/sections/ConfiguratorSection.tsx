@@ -313,14 +313,16 @@ export function ConfiguratorSection() {
             <div aria-hidden className="hidden md:block" />
           </div>
 
-          {/* Bottom row: controls */}
+          {/* Bottom row: controls. Back and Next are visually equal in
+              weight, size, padding, and radius (#28). Back is a dark-grey
+              filled secondary; the primary action gets ember. */}
           <footer className="mt-10 flex items-center justify-between border-t border-bone-50/10 pt-6">
             <button
               type="button"
               onClick={() => scrollToStep(Math.max(0, step - 1) as WizardStep)}
               disabled={step === 0}
               data-cursor="link"
-              className="rounded-full border border-bone-50/15 px-6 py-3 font-mono text-xs tracking-[0.28em] text-bone-100 uppercase transition-colors hover:bg-bone-50/5 disabled:cursor-not-allowed disabled:opacity-30"
+              className="rounded-full bg-ink-700 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-bone-50 uppercase transition-colors hover:bg-ink-600 disabled:cursor-not-allowed disabled:opacity-30"
             >
               ← Back
             </button>
@@ -345,13 +347,13 @@ export function ConfiguratorSection() {
                 onClick={() => scrollToHash('#order')}
                 disabled={stockInfo !== null && !stockInfo.inStock}
                 innerClassName={clsx(
-                  'rounded-full px-12 py-4 font-mono text-sm font-medium tracking-[0.28em] uppercase transition-colors',
+                  'rounded-full px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] uppercase transition-colors',
                   stockInfo === null || stockInfo.inStock
                     ? 'bg-ember-500 text-ink-950 shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_22px_60px_-12px_rgba(255,91,20,0.65)] hover:bg-ember-400'
                     : 'cursor-not-allowed bg-bone-50/10 text-bone-300',
                 )}
               >
-                {stockInfo && !stockInfo.inStock ? 'Out of stock' : 'Buy now →'}
+                {stockInfo && !stockInfo.inStock ? 'Out of stock' : 'Review & order →'}
               </MagneticButton>
             )}
           </footer>
@@ -430,27 +432,37 @@ export function ConfiguratorSection() {
 // Wizard subcomponents
 
 function StepRail({ step }: { step: WizardStep }) {
+  // The four variant axes are numbered 1..4; Review sits as a non-numbered
+  // final stage per the spec clarification on #25.
   const label =
     step < 4
-      ? `Step ${String(step + 1).padStart(2, '0')} / 05 · ${STEPS[step]!.axis}`
-      : 'Review · 05 / 05';
+      ? `Step ${String(step + 1).padStart(2, '0')} / 04 · ${STEPS[step]!.axis}`
+      : 'Review · build complete';
   return (
     <div className="flex flex-col items-start gap-3 md:items-end">
       <p className="font-mono text-[11px] tracking-[0.32em] text-bone-200 uppercase">
         {label}
       </p>
-      <div className="flex gap-1.5" aria-hidden>
-        {[0, 1, 2, 3, 4].map((i) => (
+      <div className="flex items-center gap-1.5" aria-hidden>
+        {[0, 1, 2, 3].map((i) => (
           <span
             key={i}
             className={clsx(
               'h-1 w-10 rounded-full transition-colors',
               i < step && 'bg-ember-500',
-              i === step && 'bg-ember-400/80',
+              i === step && 'bg-ember-400/85',
               i > step && 'bg-bone-50/10',
             )}
           />
         ))}
+        {/* Review marker: separate dot, lights up on the final stage. */}
+        <span
+          className={clsx(
+            'ml-3 h-2 w-2 rounded-full transition-colors',
+            step === 4 ? 'bg-ember-400 ring-2 ring-ember-500/40' : 'bg-bone-50/15',
+          )}
+          title="Review"
+        />
       </div>
     </div>
   );
@@ -493,12 +505,21 @@ function WizardCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -24 }}
       transition={{ duration: 0.4, ease: [0.65, 0, 0.35, 1] }}
-      className="rounded-2xl border border-bone-50/10 bg-ink-900/65 p-7 backdrop-blur-xl md:p-9"
+      // #29: explicit card spec, soft white wash + hairline border + 24 px padding.
+      className="halftone-corner rounded-2xl"
+      style={{
+        background: 'rgba(245, 245, 240, 0.04)',
+        border: '1px solid rgba(245, 245, 240, 0.08)',
+        padding: '24px',
+      }}
     >
       <p className="font-mono text-[11px] tracking-[0.32em] text-ember-400 uppercase">
         {def.axis}
       </p>
-      <p className="mt-2 max-w-md font-sans text-sm leading-relaxed text-bone-100">
+      <p
+        className="mt-2 max-w-md font-sans text-sm text-bone-50"
+        style={{ lineHeight: 'var(--leading-body)' }}
+      >
         {def.blurb}
       </p>
       <div className="mt-8">
@@ -569,7 +590,12 @@ function ReviewCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -24 }}
       transition={{ duration: 0.5, ease: [0.65, 0, 0.35, 1] }}
-      className="rounded-2xl border border-bone-50/10 bg-ink-900/65 p-7 backdrop-blur-xl md:p-9"
+      className="halftone-corner rounded-2xl"
+      style={{
+        background: 'rgba(245, 245, 240, 0.04)',
+        border: '1px solid rgba(245, 245, 240, 0.08)',
+        padding: '24px',
+      }}
     >
       <div className="flex items-baseline justify-between">
         <p className="font-mono text-[11px] tracking-[0.32em] text-ember-400 uppercase">

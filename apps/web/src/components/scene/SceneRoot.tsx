@@ -31,10 +31,17 @@ import { Effects } from './Effects';
 import { SceneCamera } from './SceneCamera';
 import { Deck } from './Deck';
 import { useSceneStore } from '@/store/scene';
+import { getSceneOpacity } from '@/lib/scene/keyframes';
 
 export function SceneRoot() {
   const [isMounted, setIsMounted] = useState(false);
-  const sceneOpacity = useSceneStore((s) => s.sceneOpacity);
+  const scrollOpacity = useSceneStore((s) => s.sceneOpacity);
+  const activeSection = useSceneStore((s) => s.activeSection);
+
+  // Final opacity is the more-restrictive of the scroll fade and the
+  // per-section cap. Manifesto, for example, caps the canvas at 0.3 so the
+  // deck reads as a faded background element behind the grid (#16).
+  const sceneOpacity = Math.min(scrollOpacity, getSceneOpacity(activeSection));
 
   useEffect(() => {
     setIsMounted(true);

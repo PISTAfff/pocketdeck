@@ -62,8 +62,15 @@ const EXPLODE_TRUCK_FRONT = new Vector3(0.9, -0.4, 0);
 const EXPLODE_TRUCK_BACK = new Vector3(-0.9, -0.4, 0);
 const EXPLODE_WHEEL = new Vector3(0, -0.2, 0.45);
 
-/** Opacity used for dimmed parts. */
-const DIM_OPACITY = 0.35;
+/**
+ * Opacity used for dimmed (non-highlighted) parts. Anatomy fades a little
+ * harder than the configurator does (#26 sets the configurator floor at 0.4).
+ */
+const DIM_OPACITY_ANATOMY = 0.32;
+const DIM_OPACITY_CONFIGURATOR = 0.4;
+/** Emissive ember tint when a part is the active highlight in anatomy (#20). */
+const GLOW_EMISSIVE = '#ff5b14';
+const GLOW_INTENSITY = 0.55;
 
 function applyDim(paint: MaterialPaint, dim: boolean): MaterialPaint {
   if (!dim) return paint;
@@ -77,14 +84,29 @@ function applyDim(paint: MaterialPaint, dim: boolean): MaterialPaint {
   };
 }
 
+function applyGlow(paint: MaterialPaint, glow: boolean): MaterialPaint {
+  if (!glow) return paint;
+  // Stack our ember glow on top of any existing emissive in the paint.
+  return {
+    ...paint,
+    emissive: GLOW_EMISSIVE,
+    emissiveIntensity: (paint.emissiveIntensity ?? 0) + GLOW_INTENSITY,
+  };
+}
+
 function PaintedMaterial({
   paint,
   dim,
+  glow = false,
+  dimOpacity = DIM_OPACITY_ANATOMY,
 }: {
   paint: MaterialPaint;
   dim: boolean;
+  glow?: boolean;
+  /** Opacity for the dimmed state; varies by section. */
+  dimOpacity?: number;
 }) {
-  const effective = applyDim(paint, dim);
+  const effective = applyGlow(applyDim(paint, dim), glow);
   return (
     <meshStandardMaterial
       color={effective.color}
@@ -93,7 +115,7 @@ function PaintedMaterial({
       emissive={effective.emissive ?? '#000000'}
       emissiveIntensity={effective.emissiveIntensity ?? 0}
       transparent={dim}
-      opacity={dim ? DIM_OPACITY : 1}
+      opacity={dim ? dimOpacity : 1}
     />
   );
 }
@@ -105,6 +127,9 @@ interface TruckProps {
   exploded: boolean;
   dimTruck: boolean;
   dimWheel: boolean;
+  glowTruck: boolean;
+  glowWheel: boolean;
+  dimOpacity: number;
 }
 
 function Truck({
@@ -114,6 +139,9 @@ function Truck({
   exploded,
   dimTruck,
   dimWheel,
+  glowTruck,
+  glowWheel,
+  dimOpacity,
 }: TruckProps) {
   const ref = useRef<Group>(null);
   const explodeTarget = isFront ? EXPLODE_TRUCK_FRONT : EXPLODE_TRUCK_BACK;
@@ -133,19 +161,19 @@ function Truck({
         <boxGeometry
           args={[TRUCK.baseplateW, TRUCK.baseplateH, TRUCK.baseplateD]}
         />
-        <PaintedMaterial paint={truckPaint} dim={dimTruck} />
+        <PaintedMaterial paint={truckPaint} dim={dimTruck} glow={glowTruck} dimOpacity={dimOpacity} />
       </mesh>
 
       <mesh position={[0, -TRUCK.hangerH / 2, 0]}>
         <boxGeometry args={[TRUCK.hangerW, TRUCK.hangerH, TRUCK.hangerD]} />
-        <PaintedMaterial paint={truckPaint} dim={dimTruck} />
+        <PaintedMaterial paint={truckPaint} dim={dimTruck} glow={glowTruck} dimOpacity={dimOpacity} />
       </mesh>
 
       <mesh position={[0, -TRUCK.hangerH, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry
           args={[TRUCK.axleR, TRUCK.axleR, TRUCK.axleLen, 18]}
         />
-        <PaintedMaterial paint={truckPaint} dim={dimTruck} />
+        <PaintedMaterial paint={truckPaint} dim={dimTruck} glow={glowTruck} dimOpacity={dimOpacity} />
       </mesh>
 
       {[1, -1].map((sign) => (
@@ -157,6 +185,8 @@ function Truck({
           exploded={exploded}
           explodeZ={sign * EXPLODE_WHEEL.z}
           dim={dimWheel}
+          glow={glowWheel}
+          dimOpacity={dimOpacity}
         />
       ))}
     </group>
@@ -170,9 +200,20 @@ interface WheelProps {
   exploded: boolean;
   explodeZ: number;
   dim: boolean;
+  glow: boolean;
+  dimOpacity: number;
 }
 
-function Wheel({ z, y, wheelPaint, exploded, explodeZ, dim }: WheelProps) {
+function Wheel({
+  z,
+  y,
+  wheelPaint,
+  exploded,
+  explodeZ,
+  dim,
+  glow,
+  dimOpacity,
+}: WheelProps) {
   const ref = useRef<Group>(null);
 
   useFrame(() => {
@@ -189,7 +230,7 @@ function Wheel({ z, y, wheelPaint, exploded, explodeZ, dim }: WheelProps) {
         <cylinderGeometry
           args={[WHEEL.radius, WHEEL.radius, WHEEL.width, 28]}
         />
-        <PaintedMaterial paint={wheelPaint} dim={dim} />
+        <PaintedMaterial paint={wheelPaint} dim={dim} glow={glow} dimOpacity={dimOpacity} />
       </mesh>
       <mesh>
         <cylinderGeometry
@@ -200,7 +241,7 @@ function Wheel({ z, y, wheelPaint, exploded, explodeZ, dim }: WheelProps) {
           metalness={0.85}
           roughness={0.3}
           transparent={dim}
-          opacity={dim ? DIM_OPACITY : 1}
+          opacity={dim ? dimOpacity : 1}
         />
       </mesh>
     </group>
@@ -208,19 +249,23 @@ function Wheel({ z, y, wheelPaint, exploded, explodeZ, dim }: WheelProps) {
 }
 
 /**
- * Dimming is only applied in the Anatomy section, where the goal is to
- * feature one part at a time. In the Configurator we want the entire custom
- * skate to read at full brightness so the user can see every choice they've
- * made; the per-step focus there comes from the camera framing, not from
- * dimming.
+ * Dimming runs in Anatomy (feature one part at a time) and in the
+ * Configurator (highlight the axis currently being edited, #26). Other
+ * sections show the full skate at full brightness.
  */
 function isDimmed(
   section: string,
   highlight: DeckPart | null,
   part: DeckPart,
 ): boolean {
-  if (section !== 'anatomy') return false;
+  if (section !== 'anatomy' && section !== 'configurator') return false;
   return highlight !== null && highlight !== part;
+}
+
+function dimOpacityFor(section: string): number {
+  return section === 'configurator'
+    ? DIM_OPACITY_CONFIGURATOR
+    : DIM_OPACITY_ANATOMY;
 }
 
 export function Deck() {
@@ -240,6 +285,17 @@ export function Deck() {
   const dimGrip = isDimmed(activeSection, highlightPart, 'grip');
   const dimTruck = isDimmed(activeSection, highlightPart, 'truck');
   const dimWheel = isDimmed(activeSection, highlightPart, 'wheel');
+
+  // Glow the active part when a highlight is set (#20 in anatomy, #26 in
+  // configurator). The non-active parts dim simultaneously.
+  const glowing =
+    (activeSection === 'anatomy' || activeSection === 'configurator') &&
+    highlightPart !== null;
+  const glowDeck = glowing && highlightPart === 'deck';
+  const glowGrip = glowing && highlightPart === 'grip';
+  const glowTruck = glowing && highlightPart === 'truck';
+  const glowWheel = glowing && highlightPart === 'wheel';
+  const dimOp = dimOpacityFor(activeSection);
 
   useFrame(() => {
     const root = rootRef.current;
@@ -284,7 +340,7 @@ export function Deck() {
             smoothness={4}
             bevelSegments={3}
           >
-            <PaintedMaterial paint={deckPaint} dim={dimDeck} />
+            <PaintedMaterial paint={deckPaint} dim={dimDeck} glow={glowDeck} />
           </RoundedBox>
 
           {deckPaint.accent ? (
@@ -297,7 +353,7 @@ export function Deck() {
                 emissive={deckPaint.emissive ?? '#000000'}
                 emissiveIntensity={(deckPaint.emissiveIntensity ?? 0) * 0.5}
                 transparent={dimDeck}
-                opacity={dimDeck ? DIM_OPACITY : 1}
+                opacity={dimDeck ? dimOp : 1}
               />
             </mesh>
           ) : null}
@@ -314,7 +370,7 @@ export function Deck() {
             bevelSegments={2}
             position={[0, DECK.thickness / 2 + GRIP.thickness / 2, 0]}
           >
-            <PaintedMaterial paint={gripPaint} dim={dimGrip} />
+            <PaintedMaterial paint={gripPaint} dim={dimGrip} glow={glowGrip} />
           </RoundedBox>
           {gripPaint.accent ? (
             <mesh
@@ -332,7 +388,7 @@ export function Deck() {
                 roughness={gripPaint.roughness}
                 metalness={gripPaint.metalness}
                 transparent={dimGrip}
-                opacity={dimGrip ? DIM_OPACITY : 1}
+                opacity={dimGrip ? dimOp : 1}
               />
             </mesh>
           ) : null}
@@ -345,6 +401,9 @@ export function Deck() {
           exploded={exploded}
           dimTruck={dimTruck}
           dimWheel={dimWheel}
+          glowTruck={glowTruck}
+          glowWheel={glowWheel}
+          dimOpacity={dimOp}
         />
         <Truck
           isFront={false}
@@ -353,6 +412,9 @@ export function Deck() {
           exploded={exploded}
           dimTruck={dimTruck}
           dimWheel={dimWheel}
+          glowTruck={glowTruck}
+          glowWheel={glowWheel}
+          dimOpacity={dimOp}
         />
       </group>
     </group>

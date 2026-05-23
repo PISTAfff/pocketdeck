@@ -78,10 +78,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${inter.variable} ${jetbrains.variable} ${anton.variable} ${archivoBlack.variable}`}
     >
       <body>
+        {/* Skip-to-content for keyboard users (#60). */}
+        <a href="#hero" className="skip-link">
+          Skip to content
+        </a>
         <Preloader />
         <SceneRoot />
         <ChromeRoot>{children}</ChromeRoot>
-        {/* Film grain overlay, pointer-none, screen blend, fixed under nav */}
+        {/* Film grain overlay, pointer-none, overlay blend, fixed under nav */}
         <div aria-hidden className="grain-overlay" />
       </body>
     </html>

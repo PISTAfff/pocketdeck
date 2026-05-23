@@ -1,158 +1,143 @@
 'use client';
 
 /**
- * Manifesto, scroll-pinned declaration that builds line by line.
+ * Manifesto, 2x2 declaration grid.
  *
- * The whole section pins for 4 viewports of scroll (one per line) so the
- * headline and the lines column stay in the viewport while the user scrolls.
- * Each line reveals as the user crosses a snap point and dims slightly when
- * the next line takes the spotlight, building toward the final "Just bearings,
- * maple, and inertia." moment.
+ * No pin (#14): the section flows in normal scroll. Each declaration cell
+ * lays out as: oversized ember number, condensed display title, a short
+ * supporting sentence (#15). Text cells carry the `.text-tint` backdrop so
+ * they remain legible over the 30 %-opacity deck rendered behind them by
+ * the scene's per-section opacity cap (#16).
  *
- * Snap behaviour: 5 snap positions = 4 transitions. The user can't lose track
- * of which line they're on because each scroll lands cleanly.
- *
- * Mobile: drop the pin entirely and let the lines stack vertically with a
- * batch fade-in, no scroll-jacking on small screens.
+ * Contrast: bone-50 is set to #f5f5f0 at the global theme level so the
+ * declaration titles measure well above WCAG AA against ink-950 (#17).
  */
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useScrollTrigger, gsap } from '@/hooks/useScrollTrigger';
 import { useSceneStore } from '@/store/scene';
 
-const LINES = [
-  'No batteries.',
-  'No screens.',
-  'No app to update.',
-  'Just bearings, maple, and inertia.',
-] as const;
+interface Declaration {
+  index: string;
+  title: string;
+  note: string;
+}
 
-const VIEWPORTS_PER_LINE = 1; // one viewport of scroll per line transition
+const DECLARATIONS: readonly Declaration[] = [
+  {
+    index: '01',
+    title: 'No batteries.',
+    note: 'Charge it once: with a flick. Then ride for years.',
+  },
+  {
+    index: '02',
+    title: 'No screens.',
+    note: 'Nothing to update, nothing to lock you out, nothing to dim.',
+  },
+  {
+    index: '03',
+    title: 'No app to update.',
+    note: 'What you press is what it does. Direct, every time.',
+  },
+  {
+    index: '04',
+    title: 'Just bearings, maple, and inertia.',
+    note: 'Three real materials. Zero firmware. All physics.',
+  },
+];
 
 export function ManifestoSection() {
   const ScrollTrigger = useScrollTrigger();
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
   const sectionRef = useRef<HTMLElement | null>(null);
-  const linesRef = useRef<HTMLDivElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const section = sectionRef.current;
-    const lines = linesRef.current;
-    if (!section || !lines) return;
+    const grid = gridRef.current;
+    if (!section || !grid) return;
 
-    const mm = gsap.matchMedia();
+    const ctx = gsap.context(() => {
+      const cells = grid.querySelectorAll<HTMLElement>('[data-declaration]');
+      gsap.set(cells, { autoAlpha: 0, y: 24 });
+      ScrollTrigger.batch(cells, {
+        start: 'top 82%',
+        onEnter: (els) =>
+          gsap.to(els, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.7,
+            stagger: 0.12,
+            ease: 'power2.out',
+          }),
+        onLeaveBack: (els) =>
+          gsap.to(els, { autoAlpha: 0, y: 24, duration: 0.4 }),
+      });
 
-    mm.add('(min-width: 768px)', () => {
-      const ctx = gsap.context(() => {
-        const lineEls = lines.querySelectorAll<HTMLElement>('[data-manifesto-line]');
-        gsap.set(lineEls, { autoAlpha: 0, y: 60 });
+      ScrollTrigger.create({
+        trigger: section,
+        start: 'top center',
+        end: 'bottom center',
+        onEnter: () => setActiveSection('manifesto'),
+        onEnterBack: () => setActiveSection('manifesto'),
+      });
+    }, section);
 
-        const totalScrollPct = LINES.length * VIEWPORTS_PER_LINE * 100;
-
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: 'top top',
-            end: `+=${totalScrollPct}%`,
-            pin: section,
-            pinSpacing: true,
-            scrub: 0.6,
-            snap: {
-              snapTo: 1 / LINES.length,
-              duration: { min: 0.2, max: 0.45 },
-              ease: 'power2.inOut',
-            },
-            onEnter: () => setActiveSection('manifesto'),
-            onEnterBack: () => setActiveSection('manifesto'),
-          },
-        });
-
-        // Each line reveals one unit later than the previous, and dims a bit
-        // when the next line takes the focus. Last line stays at full strength.
-        lineEls.forEach((el, i) => {
-          tl.to(
-            el,
-            {
-              autoAlpha: 1,
-              y: 0,
-              ease: 'power3.out',
-              duration: 0.55,
-            },
-            i,
-          );
-          if (i < lineEls.length - 1) {
-            tl.to(
-              el,
-              { autoAlpha: 0.32, duration: 0.45, ease: 'power1.out' },
-              i + 0.7,
-            );
-          }
-        });
-      }, section);
-
-      return () => ctx.revert();
-    });
-
-    mm.add('(max-width: 767px)', () => {
-      const ctx = gsap.context(() => {
-        const lineEls = lines.querySelectorAll<HTMLElement>('[data-manifesto-line]');
-        gsap.set(lineEls, { autoAlpha: 0, y: 24 });
-        ScrollTrigger.batch(lineEls, {
-          start: 'top 82%',
-          onEnter: (els) =>
-            gsap.to(els, { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.1 }),
-        });
-        ScrollTrigger.create({
-          trigger: section,
-          start: 'top center',
-          end: 'bottom center',
-          onEnter: () => setActiveSection('manifesto'),
-          onEnterBack: () => setActiveSection('manifesto'),
-        });
-      }, section);
-      return () => ctx.revert();
-    });
-
-    return () => {
-      mm.revert();
-      ScrollTrigger.refresh();
-    };
+    return () => ctx.revert();
   }, [ScrollTrigger, setActiveSection]);
 
   return (
     <section
       ref={sectionRef}
       id="manifesto"
-      className="relative flex min-h-screen items-center px-6 py-24 sm:px-10 md:px-14"
+      className="relative px-6 py-24 sm:px-10 md:px-14 md:py-24"
     >
-      <div className="mx-auto grid w-full max-w-[1400px] items-center gap-12 md:grid-cols-[1fr_1.4fr] md:gap-20">
-        <div>
+      <div className="mx-auto w-full max-w-[1400px]">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ duration: 0.6 }}
+          className="text-tint max-w-2xl"
+        >
           <span className="tape inline-block">01 · manifesto</span>
           <h2
-            className="display-headline mt-6 text-bone-50"
+            className="display-headline mt-8 text-bone-50"
             style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5.5rem)' }}
           >
             Built to fidget,
             <br />
             tuned to <span className="text-ember-500">ride</span>.
           </h2>
-          <p className="mt-8 hidden max-w-sm font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase md:block">
-            Scroll · four declarations
-          </p>
-        </div>
-        <div ref={linesRef} className="flex flex-col gap-10 md:gap-16">
-          {LINES.map((line, i) => (
-            <p
-              key={line}
-              data-manifesto-line
-              className="display-headline leading-[1] text-bone-50"
-              style={{ fontSize: 'clamp(1.75rem, 4vw, 3.5rem)' }}
+        </motion.div>
+
+        <div
+          ref={gridRef}
+          className="mt-16 grid gap-x-12 gap-y-16 md:mt-24 md:grid-cols-2"
+        >
+          {DECLARATIONS.map((d) => (
+            <article
+              key={d.index}
+              data-declaration
+              className="text-tint flex flex-col gap-4"
             >
-              <span className="mr-4 align-top font-mono text-[11px] tracking-[0.3em] text-ember-500 normal-case">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              {line}
-            </p>
+              <p className="display-headline text-ember-500 text-7xl md:text-8xl">
+                {d.index}
+              </p>
+              <h3
+                className="display-headline text-bone-50"
+                style={{ fontSize: 'clamp(1.75rem, 3.6vw, 2.75rem)' }}
+              >
+                {d.title}
+              </h3>
+              <p
+                className="max-w-md font-sans text-base text-bone-50"
+                style={{ lineHeight: 'var(--leading-body)' }}
+              >
+                {d.note}
+              </p>
+            </article>
           ))}
         </div>
       </div>

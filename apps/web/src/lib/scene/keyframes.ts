@@ -37,7 +37,8 @@ export interface DeckKeyframe {
  */
 const SCENE_OPACITY: Record<SectionId, number> = {
   hero: 1,
-  manifesto: 1,
+  // Manifesto frames the deck as a faded background element (#16).
+  manifesto: 0.3,
   anatomy: 1,
   configurator: 1,
   tricks: 0,
@@ -84,8 +85,11 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
 
 const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
   hero: {
-    position: [2.0, 0.35, 0],
-    rotation: [-0.18, 0.45, 0.02],
+    // Bottom-right of the viewport (#10). Negative Y drops the model below
+    // center; positive X keeps it in the right column so the headline on
+    // the left never gets clipped by the wheels.
+    position: [1.7, -0.55, 0],
+    rotation: [-0.3, 0.55, 0.04],
     scale: 0.55,
   },
   manifesto: {
@@ -101,12 +105,11 @@ const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
   },
   configurator: {
     // World-space upper-right position so the deck reads in the top-right
-    // of the viewport while the wizard UI takes left + bottom. Smaller
-    // scale + recentered X so the deck fits entirely inside the visible
-    // frame at the camera distance defined above.
-    position: [1.6, 0.85, 0],
+    // of the viewport while the wizard UI takes left + bottom. Constrained
+    // so the wheels never crop on the right edge (#27).
+    position: [1.5, 0.85, 0],
     rotation: [-0.18, 0.42, 0],
-    scale: 0.58,
+    scale: 0.55,
   },
   tricks: {
     position: [0, 0.4, 0],
@@ -159,29 +162,28 @@ const ANATOMY_CAMERA: Record<DeckPart, CameraKeyframe> = {
 };
 
 const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
+  // Scales kept under ~0.4 so the deck's projected width stays inside the
+  // right column (~45vw, #18). Position X is also reduced so the wheels
+  // never cross the centerline into the headline / spec column on the left.
   deck: {
-    // Flat board, slightly tilted so the corner catches light.
-    position: [1.5, 0, 0],
+    position: [1.1, 0, 0],
     rotation: [-Math.PI / 2 + 0.12, 0, 0],
-    scale: 0.46,
+    scale: 0.38,
   },
   truck: {
-    // Pitched up so the underside (trucks) faces the camera.
-    position: [1.5, 0, 0],
+    position: [1.1, 0, 0],
     rotation: [-0.42, 0.12, 0],
-    scale: 0.5,
+    scale: 0.42,
   },
   wheel: {
-    // Rotated so a wheel pair leads, slight Z cant for dynamic feel.
-    position: [1.5, 0, 0],
+    position: [1.1, 0, 0],
     rotation: [-0.2, 0.55, 0.04],
-    scale: 0.5,
+    scale: 0.42,
   },
   grip: {
-    // Pure top-down: the grip stripe is the subject.
-    position: [1.5, 0, 0],
+    position: [1.1, 0, 0],
     rotation: [-Math.PI / 2, 0, 0],
-    scale: 0.46,
+    scale: 0.38,
   },
 };
 
