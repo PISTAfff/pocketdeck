@@ -14,6 +14,7 @@
  *     live submit, address counter, friendlier helpers, success state.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { CreateOrderRequest, Governorate, Order } from '@pocketdeck/types';
 import { useSceneStore } from '@/store/scene';
@@ -84,6 +85,13 @@ export function OrderSection() {
   const [status, setStatus] = useState<OrderStatus>({ kind: 'idle' });
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
+
+  // SSR-safe portal target. `document.body` only exists on the client; we
+  // wait one render to capture it.
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setPortalTarget(document.body);
+  }, []);
 
   const validation = useMemo(() => validate(form), [form]);
   const ready = validation.ok;
@@ -346,60 +354,72 @@ export function OrderSection() {
         </div>
       )}
 
-      {/* Fullscreen preview overlay */}
-      <AnimatePresence>
-        {previewExpanded && (
-          <motion.div
-            key="preview-overlay"
-            className="fixed inset-0 z-[80] bg-ink-950"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.45, ease: [0.65, 0, 0.35, 1] }}
-          >
-            <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ duration: 0.5, ease: [0.65, 0, 0.35, 1] }}
-              className="absolute inset-0"
-            >
-              <OrderPreview expanded />
-            </motion.div>
-            <motion.button
-              type="button"
-              onClick={() => setPreviewExpanded(false)}
-              data-cursor="link"
-              aria-label="Close fullscreen preview and return"
-              initial={{ y: -16, opacity: 0 }}
-              animate={{ y: 0, opacity: 1, transition: { delay: 0.2 } }}
-              exit={{ y: -16, opacity: 0 }}
-              className="absolute top-6 left-6 z-10 inline-flex items-center gap-3 rounded-full bg-ink-900/70 px-5 py-3 font-mono text-xs tracking-[0.28em] text-bone-50 uppercase ring-1 ring-bone-50/15 backdrop-blur-xl transition-colors hover:bg-ink-900 md:top-10 md:left-10"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path
-                  d="M9 3 L5 7 L9 11"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Back
-            </motion.button>
-            {/* Bottom-right meta */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { delay: 0.35 } }}
-              exit={{ opacity: 0 }}
-              className="pointer-events-none absolute right-6 bottom-6 hidden font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase md:right-10 md:bottom-10 md:block"
-            >
-              <span className="text-bone-100">Your build · </span>
-              {selection.deck} / {selection.wheel} / {selection.truck} / {selection.grip}
-            </motion.div>
-          </motion.div>
+      {/*
+        Fullscreen preview overlay. Rendered via createPortal to <body> so it
+        escapes the .page-root stacking context (z-index: 1). Without the
+        portal, the overlay's z-[80] was trapped inside page-root and the
+        nav (z-50 in the document root) was painting over the Back pill.
+        With the portal, the overlay sits as a sibling of the nav at the
+        root level and z-[120] beats z-50 cleanly.
+      */}
+      {portalTarget &&
+        createPortal(
+          <AnimatePresence>
+            {previewExpanded && (
+              <motion.div
+                key="preview-overlay"
+                className="fixed inset-0 z-[120] bg-ink-950"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.45, ease: [0.65, 0, 0.35, 1] }}
+              >
+                <motion.div
+                  initial={{ scale: 0.92, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.92, opacity: 0 }}
+                  transition={{ duration: 0.5, ease: [0.65, 0, 0.35, 1] }}
+                  className="absolute inset-0"
+                >
+                  <OrderPreview expanded />
+                </motion.div>
+                <motion.button
+                  type="button"
+                  onClick={() => setPreviewExpanded(false)}
+                  data-cursor="link"
+                  aria-label="Close fullscreen preview and return"
+                  initial={{ y: -16, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1, transition: { delay: 0.2 } }}
+                  exit={{ y: -16, opacity: 0 }}
+                  className="absolute top-6 left-6 z-10 inline-flex items-center gap-3 rounded-full bg-ink-900/85 px-5 py-3 font-mono text-xs tracking-[0.28em] text-bone-50 uppercase ring-1 ring-bone-50/15 backdrop-blur-xl transition-colors hover:bg-ink-900 md:top-10 md:left-10"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M9 3 L5 7 L9 11"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Back
+                </motion.button>
+                {/* Bottom-right meta */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1, transition: { delay: 0.35 } }}
+                  exit={{ opacity: 0 }}
+                  className="pointer-events-none absolute right-6 bottom-6 hidden font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase md:right-10 md:bottom-10 md:block"
+                >
+                  <span className="text-bone-100">Your build · </span>
+                  {selection.deck} / {selection.wheel} / {selection.truck} /{' '}
+                  {selection.grip}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          portalTarget,
         )}
-      </AnimatePresence>
     </section>
   );
 }

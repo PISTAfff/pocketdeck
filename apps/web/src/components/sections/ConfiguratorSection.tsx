@@ -246,7 +246,10 @@ export function ConfiguratorSection() {
     >
       <div
         ref={stageRef}
-        className="hidden min-h-screen flex-col px-6 py-24 sm:px-10 md:flex md:px-14"
+        // py-24 was eating too much vertical space and pushing the footer
+        // (Back + Buy now) off-screen on the review step. Tightened to
+        // accommodate nav clearance + a comfortable footer bottom margin.
+        className="hidden min-h-screen flex-col px-6 pt-24 pb-8 sm:px-10 md:flex md:px-14"
       >
         <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col">
           {/* Header. All copy + step rail live in the LEFT column so the
@@ -277,8 +280,12 @@ export function ConfiguratorSection() {
             <div aria-hidden className="hidden md:block" />
           </header>
 
-          {/* Two-column body: wizard card on the LEFT, deck reserved area on the RIGHT */}
-          <div className="mt-12 grid flex-1 grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-12">
+          {/* Two-column body: wizard card on the LEFT, deck reserved area on the RIGHT.
+              `min-h-0` lets the grid shrink so the footer below it (Back +
+              Buy now) is always pinned at the bottom of the viewport. If the
+              review card is taller than the available space, the LEFT column
+              scrolls internally with our custom dark scrollbar. */}
+          <div className="mt-10 grid min-h-0 flex-1 grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-12 overflow-y-auto">
             <div className="flex flex-col gap-6">
               <AnimatePresence mode="wait">
                 {step < 4 ? (
