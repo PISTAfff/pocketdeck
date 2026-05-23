@@ -249,9 +249,12 @@ export function ConfiguratorSection() {
         className="hidden min-h-screen flex-col px-6 py-24 sm:px-10 md:flex md:px-14"
       >
         <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col">
-          {/* Top row: kicker + headline + step indicator */}
-          <header className="grid items-end gap-8 md:grid-cols-[1.05fr_1fr]">
-            <div>
+          {/* Header. All copy + step rail live in the LEFT column so the
+              right column stays empty for the 3D deck (#step-counter bleed
+              fix: the rail used to sit in the right column and was getting
+              clipped by the deck plate). */}
+          <header className="grid items-start gap-8 md:grid-cols-[1.05fr_1fr]">
+            <div className="text-tint">
               <span className="tape inline-block">03 · configure</span>
               <h2
                 className="display-headline mt-6 text-bone-50"
@@ -262,11 +265,16 @@ export function ConfiguratorSection() {
                 <span className="spray-text text-ember-500">step by step.</span>
               </h2>
               <p className="mt-5 max-w-md font-sans text-base leading-relaxed text-bone-100">
-                Scroll to move through the four axes. The deck on the right
-                relights the active part on every step.
+                Click <span className="text-bone-50">Next</span> to step
+                through the four axes. The deck on the right relights the
+                active part on every step.
               </p>
+              <div className="mt-8 max-w-md">
+                <StepRail step={step} onJump={(target) => goToStep(target)} align="start" />
+              </div>
             </div>
-            <StepRail step={step} onJump={(target) => goToStep(target)} />
+            {/* Right column reserved for the 3D deck. */}
+            <div aria-hidden className="hidden md:block" />
           </header>
 
           {/* Two-column body: wizard card on the LEFT, deck reserved area on the RIGHT */}
@@ -425,9 +433,13 @@ export function ConfiguratorSection() {
 interface StepRailProps {
   step: WizardStep;
   onJump?: (step: WizardStep) => void;
+  /** Where the label + chips align. Defaults to 'end' for the original
+      top-right placement; we use 'start' when the rail moves under the
+      heading copy on the left column. */
+  align?: 'start' | 'end';
 }
 
-function StepRail({ step, onJump }: StepRailProps) {
+function StepRail({ step, onJump, align = 'end' }: StepRailProps) {
   // The four variant axes are numbered 1..4; Review sits as a non-numbered
   // final stage per the spec clarification on #25.
   const label =
@@ -453,7 +465,12 @@ function StepRail({ step, onJump }: StepRailProps) {
   };
 
   return (
-    <div className="flex flex-col items-start gap-3 md:items-end">
+    <div
+      className={clsx(
+        'flex flex-col gap-3',
+        align === 'end' ? 'items-start md:items-end' : 'items-start',
+      )}
+    >
       <p className="font-mono text-[11px] tracking-[0.32em] text-bone-200 uppercase">
         {label}
       </p>
