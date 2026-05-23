@@ -41,6 +41,11 @@ function opacityForProgress(p: number): number {
 }
 
 let lenisSingleton: Lenis | null = null;
+// Holds the pause/resume intent across pre-init time. If pauseScroll() is
+// called before Lenis is constructed (the Preloader runs before ChromeRoot
+// mounts the Lenis instance), we set this to `true` and apply the stop
+// the moment Lenis comes up. resumeScroll() clears it.
+let pauseRequested = false;
 
 /**
  * Smoothly scroll to a hash target (e.g. "#order"). Safe to call from any
@@ -75,15 +80,17 @@ export function scrollToY(y: number, durationSec = 0.6): void {
 
 /**
  * Pause Lenis. Wheel / touch / arrow-key scrolls are swallowed until
- * `resumeScroll()` runs. Used by the Review & Buy fullscreen overlay so
- * dragging the deck doesn't accidentally scroll the page underneath.
+ * `resumeScroll()` runs. Safe to call before Lenis is initialised: the
+ * intent is recorded and applied as soon as the Lenis instance exists.
  */
 export function pauseScroll(): void {
+  pauseRequested = true;
   lenisSingleton?.stop();
 }
 
-/** Resume Lenis after pauseScroll(). */
+/** Resume Lenis after pauseScroll(). Clears any pending pause intent too. */
 export function resumeScroll(): void {
+  pauseRequested = false;
   lenisSingleton?.start();
 }
 
@@ -104,6 +111,11 @@ export function useLenis() {
     });
     lenisRef.current = lenis;
     lenisSingleton = lenis;
+
+    // If someone (Preloader) asked us to pause before we existed, honour it.
+    if (pauseRequested) {
+      lenis.stop();
+    }
 
     const setScrollProgress = useSceneStore.getState().setScrollProgress;
     const setSceneOpacity = useSceneStore.getState().setSceneOpacity;

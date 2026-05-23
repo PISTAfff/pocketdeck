@@ -20,6 +20,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useProgress } from '@react-three/drei';
+import { pauseScroll, resumeScroll } from '@/hooks/useLenis';
 
 const MIN_DISPLAY_MS = 2000;
 const HOLD_AT_100_MS = 350;
@@ -66,6 +67,26 @@ export function Preloader() {
     const id = window.setTimeout(() => setDone(true), wait);
     return () => window.clearTimeout(id);
   }, [active]);
+
+  // Lock page scroll while the preloader is visible. Lenis isn't initialised
+  // yet when this component mounts (ChromeRoot wires it up after), so the
+  // pauseScroll() call queues the intent and applies it as soon as Lenis
+  // exists. body overflow is locked as a backstop. Released the moment the
+  // overlay starts to fade out (done flips to true).
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (done) {
+      document.body.style.overflow = '';
+      resumeScroll();
+      return;
+    }
+    document.body.style.overflow = 'hidden';
+    pauseScroll();
+    return () => {
+      document.body.style.overflow = '';
+      resumeScroll();
+    };
+  }, [done]);
 
   const shown = Math.min(100, Math.round(display));
 
