@@ -5,15 +5,12 @@
  *
  * - Sets up Lenis smooth scroll and forwards scroll progress to the scene store.
  * - Renders the custom cursor.
- * - Plays a one-shot intro curtain reveal (curtain starts covering the page
- *   and slides up off the top once mounted).
  * - Mounts the <Nav /> and <Footer /> around children.
  *
  * The persistent WebGL canvas (<SceneRoot />) lives in the root layout and
- * keeps rendering through transitions — we only wipe DOM overlays here.
+ * keeps rendering through transitions. The first-paint reveal is handled
+ * separately by <Preloader />, which sits above this and SceneRoot.
  */
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
 import { CustomCursor } from '@/components/ui/CustomCursor';
 import { Nav } from './Nav';
 import { Footer } from './Footer';
@@ -25,13 +22,6 @@ interface ChromeRootProps {
 
 export function ChromeRoot({ children }: ChromeRootProps) {
   useLenis();
-  const [introDone, setIntroDone] = useState(false);
-
-  useEffect(() => {
-    // Lift the curtain on next tick so the initial paint is hidden by it.
-    const id = window.setTimeout(() => setIntroDone(true), 50);
-    return () => window.clearTimeout(id);
-  }, []);
 
   return (
     <>
@@ -41,21 +31,6 @@ export function ChromeRoot({ children }: ChromeRootProps) {
         {children}
         <Footer />
       </div>
-      <AnimatePresence>
-        {!introDone && (
-          <motion.div
-            key="intro-curtain"
-            aria-hidden
-            className="pointer-events-none fixed inset-0 z-[90] bg-ink-950"
-            initial={{ y: 0 }}
-            animate={{ y: 0 }}
-            exit={{
-              y: '-100%',
-              transition: { duration: 0.9, ease: [0.65, 0, 0.35, 1] },
-            }}
-          />
-        )}
-      </AnimatePresence>
     </>
   );
 }

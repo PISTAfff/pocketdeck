@@ -91,19 +91,19 @@ const gripOptions: VariantOption<GripPattern>[] = [
   {
     value: 'classic',
     label: 'Classic',
-    thumbnail: '/grips/classic.png',
+    thumbnail: '/grips/classic.svg',
     priceModifier: 0,
   },
   {
     value: 'tiger',
     label: 'Tiger',
-    thumbnail: '/grips/tiger.png',
+    thumbnail: '/grips/tiger.svg',
     priceModifier: 0,
   },
   {
     value: 'topo',
     label: 'Topo',
-    thumbnail: '/grips/topo.png',
+    thumbnail: '/grips/topo.svg',
     priceModifier: 0,
   },
 ];

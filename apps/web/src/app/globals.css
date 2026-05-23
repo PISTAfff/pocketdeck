@@ -14,9 +14,12 @@
   --color-ember-500: #ff5b14;
   --color-ember-600: #d94404;
 
-  --font-display: 'Inter Display', 'Inter', system-ui, -apple-system, sans-serif;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* next/font on the <html> element injects --font-inter and --font-jetbrains
+     (see app/layout.tsx). We wire those into the Tailwind font tokens here so
+     `font-sans` / `font-mono` / `font-display` utilities use them. */
+  --font-display: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --radius-md: 0.5rem;
   --radius-lg: 0.875rem;
