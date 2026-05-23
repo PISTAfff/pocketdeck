@@ -1,14 +1,19 @@
 'use client';
 
 /**
- * Manifesto, scroll-pinned headline with body lines that tick through.
+ * Manifesto, scroll-pinned declaration that builds line by line.
  *
- * The headline column pins to the top of the viewport while the body lines
- * scroll past it. `pinSpacing: true` adds the buffer ScrollTrigger needs so
- * the pin releases BEFORE the next section starts, which is what was missing
- * before (Anatomy headline was overlapping Manifesto headline during scroll).
+ * The whole section pins for 4 viewports of scroll (one per line) so the
+ * headline and the lines column stay in the viewport while the user scrolls.
+ * Each line reveals as the user crosses a snap point and dims slightly when
+ * the next line takes the spotlight, building toward the final "Just bearings,
+ * maple, and inertia." moment.
  *
- * Below md, the pin is disabled and the section scrolls naturally.
+ * Snap behaviour: 5 snap positions = 4 transitions. The user can't lose track
+ * of which line they're on because each scroll lands cleanly.
+ *
+ * Mobile: drop the pin entirely and let the lines stack vertically with a
+ * batch fade-in, no scroll-jacking on small screens.
  */
 import { useEffect, useRef } from 'react';
 import { useScrollTrigger, gsap } from '@/hooks/useScrollTrigger';
@@ -21,44 +26,66 @@ const LINES = [
   'Just bearings, maple, and inertia.',
 ] as const;
 
+const VIEWPORTS_PER_LINE = 1; // one viewport of scroll per line transition
+
 export function ManifestoSection() {
   const ScrollTrigger = useScrollTrigger();
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
   const sectionRef = useRef<HTMLElement | null>(null);
-  const headlineRef = useRef<HTMLDivElement | null>(null);
   const linesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const section = sectionRef.current;
-    const headline = headlineRef.current;
     const lines = linesRef.current;
-    if (!section || !headline || !lines) return;
+    if (!section || !lines) return;
 
     const mm = gsap.matchMedia();
 
     mm.add('(min-width: 768px)', () => {
       const ctx = gsap.context(() => {
         const lineEls = lines.querySelectorAll<HTMLElement>('[data-manifesto-line]');
-        gsap.set(lineEls, { autoAlpha: 0, y: 40 });
+        gsap.set(lineEls, { autoAlpha: 0, y: 60 });
+
+        const totalScrollPct = LINES.length * VIEWPORTS_PER_LINE * 100;
 
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: section,
             start: 'top top',
-            end: '+=100%',
-            pin: headline,
+            end: `+=${totalScrollPct}%`,
+            pin: section,
             pinSpacing: true,
             scrub: 0.6,
+            snap: {
+              snapTo: 1 / LINES.length,
+              duration: { min: 0.2, max: 0.45 },
+              ease: 'power2.inOut',
+            },
             onEnter: () => setActiveSection('manifesto'),
             onEnterBack: () => setActiveSection('manifesto'),
           },
         });
 
+        // Each line reveals one unit later than the previous, and dims a bit
+        // when the next line takes the focus. Last line stays at full strength.
         lineEls.forEach((el, i) => {
-          tl.to(el, { autoAlpha: 1, y: 0, duration: 1 }, i * 0.6);
+          tl.to(
+            el,
+            {
+              autoAlpha: 1,
+              y: 0,
+              ease: 'power3.out',
+              duration: 0.55,
+            },
+            i,
+          );
           if (i < lineEls.length - 1) {
-            tl.to(el, { autoAlpha: 0.22, duration: 0.6 }, i * 0.6 + 0.7);
+            tl.to(
+              el,
+              { autoAlpha: 0.32, duration: 0.45, ease: 'power1.out' },
+              i + 0.7,
+            );
           }
         });
       }, section);
@@ -67,12 +94,11 @@ export function ManifestoSection() {
     });
 
     mm.add('(max-width: 767px)', () => {
-      // Mobile: simple in-view reveal, no pin.
       const ctx = gsap.context(() => {
         const lineEls = lines.querySelectorAll<HTMLElement>('[data-manifesto-line]');
         gsap.set(lineEls, { autoAlpha: 0, y: 24 });
         ScrollTrigger.batch(lineEls, {
-          start: 'top 80%',
+          start: 'top 82%',
           onEnter: (els) =>
             gsap.to(els, { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.1 }),
         });
@@ -84,7 +110,6 @@ export function ManifestoSection() {
           onEnterBack: () => setActiveSection('manifesto'),
         });
       }, section);
-
       return () => ctx.revert();
     });
 
@@ -98,10 +123,10 @@ export function ManifestoSection() {
     <section
       ref={sectionRef}
       id="manifesto"
-      className="relative px-6 py-32 sm:px-10 md:px-14 md:py-40"
+      className="relative flex min-h-screen items-center px-6 py-24 sm:px-10 md:px-14"
     >
-      <div className="mx-auto grid max-w-[1400px] gap-12 md:grid-cols-[1fr_1.4fr] md:gap-20">
-        <div ref={headlineRef} className="md:h-[80vh] md:py-[10vh]">
+      <div className="mx-auto grid w-full max-w-[1400px] items-center gap-12 md:grid-cols-[1fr_1.4fr] md:gap-20">
+        <div>
           <span className="tape inline-block">01 · manifesto</span>
           <h2
             className="display-headline mt-6 text-bone-50"
@@ -111,8 +136,11 @@ export function ManifestoSection() {
             <br />
             tuned to <span className="text-ember-500">ride</span>.
           </h2>
+          <p className="mt-8 hidden max-w-sm font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase md:block">
+            Scroll · four declarations
+          </p>
         </div>
-        <div ref={linesRef} className="flex flex-col gap-10 pt-2 md:gap-16">
+        <div ref={linesRef} className="flex flex-col gap-10 md:gap-16">
           {LINES.map((line, i) => (
             <p
               key={line}
