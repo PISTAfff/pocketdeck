@@ -203,8 +203,11 @@ const CONFIGURATOR_CAMERA: Record<DeckPart, CameraKeyframe> = {
 
 const CONFIGURATOR_DECK: Record<DeckPart, DeckKeyframe> = {
   deck: {
+    // Slight downward tilt so the deck plate face (with its accent stripe
+    // visible through the side bevel) reads cleanly from above. Was
+    // rotated -PI/2 which tipped the board on its long edge.
     position: [1.5, 0, 0],
-    rotation: [-Math.PI / 2 + 0.1, 0, 0],
+    rotation: [0.25, 0, 0],
     scale: 0.45,
   },
   wheel: {
@@ -218,8 +221,13 @@ const CONFIGURATOR_DECK: Record<DeckPart, DeckKeyframe> = {
     scale: 0.5,
   },
   grip: {
+    // The grip step's job is to show the GRIP TOP (where the pattern
+    // lives), so the deck stays nearly flat with a small forward tilt.
+    // The previous -PI/2 rotation pointed the grip face AWAY from the
+    // camera, which made every pattern look identical because the user
+    // was actually staring at the deck plate's side.
     position: [1.5, 0, 0],
-    rotation: [-Math.PI / 2, 0, 0],
+    rotation: [0.18, 0, 0],
     scale: 0.45,
   },
 };
@@ -230,7 +238,9 @@ const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
   // never cross the centerline into the headline / spec column on the left.
   deck: {
     position: [1.1, 0, 0],
-    rotation: [-Math.PI / 2 + 0.12, 0, 0],
+    // Slight forward tilt instead of -PI/2 (which tipped the board onto
+    // its long edge). Grip face is mostly toward the camera at high +Y.
+    rotation: [0.25, 0, 0],
     scale: 0.38,
   },
   truck: {
@@ -245,7 +255,7 @@ const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
   },
   grip: {
     position: [1.1, 0, 0],
-    rotation: [-Math.PI / 2, 0, 0],
+    rotation: [0.18, 0, 0],
     scale: 0.38,
   },
 };
