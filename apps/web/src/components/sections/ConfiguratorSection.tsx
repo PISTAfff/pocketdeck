@@ -1,17 +1,28 @@
 'use client';
 
 /**
- * Configurator, four-step wizard. The user picks the deck, then the wheels,
- * then the trucks, then the grip, and finally lands on a review step with
- * the full breakdown and a CTA into the order section.
+ * Configurator, a scroll-driven wizard.
  *
- * Each step pushes a highlightPart token into the scene store. The Deck
- * component dims every non-highlighted part so the active component
- * physically pops in the 3D preview.
+ * The section is five viewports tall. While its top is at the viewport top
+ * the inner stage pins and the page no longer scrolls — instead each scroll
+ * tick snaps to the next wizard step. Steps map to the four variant axes
+ * plus a final review screen with a BUY NOW button that scrolls into the
+ * order form.
  *
- * The price panel lives on the left as a sticky sidebar (updates on every
- * step). The right column swaps between SwatchRow (steps 1..4) and the
- * review summary (step 5).
+ * Layout when pinned (desktop):
+ *
+ *   +----------------------+--------------------+
+ *   | tape kicker          | (3D deck top-right)|
+ *   | headline             |                    |
+ *   | step 02 / 05 + bar   |                    |
+ *   |                      +--------------------+
+ *   | [wizard card]                              |
+ *   |                                            |
+ *   | price + sku                                |
+ *   | [← back] [next →]                          |
+ *   +--------------------------------------------+
+ *
+ * On mobile the section falls back to a normal click-driven wizard, no pin.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
@@ -25,15 +36,16 @@ import type {
 } from '@pocketdeck/types';
 import { skuFromSelection } from '@pocketdeck/types';
 import clsx from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSceneStore, type DeckPart } from '@/store/scene';
 import { useConfiguratorStore } from '@/store/configurator';
 import { getProduct } from '@/lib/api';
 import { MagneticButton } from '@/components/ui/MagneticButton';
-import { scrollToHash } from '@/hooks/useLenis';
+import { scrollToHash, scrollToY } from '@/hooks/useLenis';
+import { useScrollTrigger, gsap } from '@/hooks/useScrollTrigger';
 import { SwatchRow } from './SwatchRow';
 import {
   ConfiguratorFallback,
-  PricePanel,
   type PriceBreakdownRow,
   type VariantStockInfo,
 } from './ConfiguratorPanels';
@@ -41,9 +53,11 @@ import {
 const PRODUCT_SLUG = 'pocketdeck';
 
 type WizardStep = 0 | 1 | 2 | 3 | 4;
+const STEP_COUNT = 5; // four axes + review
+const PIN_VIEWPORTS = STEP_COUNT - 1; // 4 viewports of pinned scroll => 5 snap positions
 
 interface StepDef {
-  index: WizardStep;
+  index: 0 | 1 | 2 | 3;
   part: DeckPart;
   axis: 'Deck' | 'Wheels' | 'Trucks' | 'Grip';
   blurb: string;
@@ -77,6 +91,7 @@ const STEPS: readonly StepDef[] = [
 ];
 
 export function ConfiguratorSection() {
+  const ScrollTrigger = useScrollTrigger();
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
   const setHighlightPart = useSceneStore((s) => s.setHighlightPart);
   const selection = useSceneStore((s) => s.selection);
@@ -93,6 +108,8 @@ export function ConfiguratorSection() {
   const setError = useConfiguratorStore((s) => s.setError);
 
   const sectionRef = useRef<HTMLElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const stepRef = useRef<WizardStep>(0);
   const [step, setStep] = useState<WizardStep>(0);
 
   // Fetch the product once.
@@ -114,38 +131,89 @@ export function ConfiguratorSection() {
     };
   }, [setProduct, setLoading, setError]);
 
-  // Track active section + push the highlightPart for the current step.
+  // Desktop: pin the section and convert scroll into step changes.
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const section = sectionRef.current;
+    const stage = stageRef.current;
+    if (!section || !stage) return;
+
+    const mm = gsap.matchMedia();
+
+    mm.add('(min-width: 768px)', () => {
+      const ctx = gsap.context(() => {
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top top',
+          end: `+=${PIN_VIEWPORTS * 100}%`,
+          pin: stage,
+          pinSpacing: true,
+          scrub: false,
+          snap: {
+            snapTo: 1 / PIN_VIEWPORTS,
+            duration: { min: 0.2, max: 0.5 },
+            ease: 'power2.inOut',
+          },
+          onEnter: () => {
+            setActiveSection('configurator');
+            const cur = stepRef.current;
+            const def = STEPS.find((s) => s.index === cur);
+            setHighlightPart(def ? def.part : null);
+          },
+          onEnterBack: () => {
+            setActiveSection('configurator');
+            const cur = stepRef.current;
+            const def = STEPS.find((s) => s.index === cur);
+            setHighlightPart(def ? def.part : null);
+          },
+          onLeave: () => setHighlightPart(null),
+          onLeaveBack: () => setHighlightPart(null),
+          onUpdate: (self) => {
+            const i = Math.min(
+              STEP_COUNT - 1,
+              Math.round(self.progress * (STEP_COUNT - 1)),
+            ) as WizardStep;
+            if (i !== stepRef.current) {
+              stepRef.current = i;
+              setStep(i);
+              const def = STEPS.find((s) => s.index === i);
+              setHighlightPart(def ? def.part : null);
+            }
+          },
+        });
+      }, section);
+
+      return () => ctx.revert();
+    });
+
+    return () => {
+      mm.revert();
+      setHighlightPart(null);
+    };
+  }, [ScrollTrigger, setActiveSection, setHighlightPart]);
+
+  // Mobile: also drive activeSection / highlightPart via IntersectionObserver.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(min-width: 768px)').matches) return;
     const node = sectionRef.current;
     if (!node) return;
     const observer = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
-          if (e.isIntersecting && e.intersectionRatio > 0.4) {
+          if (e.isIntersecting && e.intersectionRatio > 0.3) {
             setActiveSection('configurator');
-            // Sync the highlight to the currently visible step.
-            const active = STEPS.find((s) => s.index === step);
-            setHighlightPart(active ? active.part : null);
-          } else if (!e.isIntersecting) {
-            setHighlightPart(null);
+            const cur = stepRef.current;
+            const def = STEPS.find((s) => s.index === cur);
+            setHighlightPart(def ? def.part : null);
           }
         }
       },
-      { threshold: [0.4] },
+      { threshold: [0.3] },
     );
     observer.observe(node);
-    return () => {
-      observer.disconnect();
-      setHighlightPart(null);
-    };
-  }, [setActiveSection, setHighlightPart, step]);
-
-  // Whenever the step changes while in-section, push the new highlight.
-  useEffect(() => {
-    const active = STEPS.find((s) => s.index === step);
-    setHighlightPart(active ? active.part : null);
-  }, [step, setHighlightPart]);
+    return () => observer.disconnect();
+  }, [setActiveSection, setHighlightPart]);
 
   const price = useMemo(() => computePrice(product, selection), [product, selection]);
   const stockInfo = useMemo(
@@ -157,85 +225,198 @@ export function ConfiguratorSection() {
     [product, selection],
   );
 
-  const onPrev = () => setStep((s) => Math.max(0, (s - 1) as WizardStep) as WizardStep);
-  const onNext = () =>
-    setStep((s) => Math.min(4, (s + 1) as WizardStep) as WizardStep);
+  /** Smoothly jump to step k via Lenis-scrolling the page to the matching pin position. */
+  const scrollToStep = (k: WizardStep) => {
+    const section = sectionRef.current;
+    if (!section) {
+      setStep(k);
+      return;
+    }
+    const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+    const totalScroll = window.innerHeight * PIN_VIEWPORTS;
+    // Bias slightly past each snap point so ScrollTrigger's snap doesn't bounce
+    // us backwards on a tie.
+    const targetY = sectionTop + (k / (STEP_COUNT - 1)) * totalScroll + 2;
+    scrollToY(targetY, 0.7);
+  };
 
   return (
     <section
       ref={sectionRef}
       id="configurator"
-      className="relative px-6 py-32 sm:px-10 md:px-14 md:py-40"
+      className="relative bg-ink-950"
+      style={{
+        // Five steps means four "advances" * 100vh + one starting viewport.
+        minHeight: `${PIN_VIEWPORTS * 100 + 100}vh`,
+      }}
     >
-      <div className="mx-auto max-w-[1400px]">
-        <header className="max-w-2xl">
-          <p className="font-mono text-xs tracking-[0.4em] text-bone-300 uppercase">
-            03 / configure
-          </p>
-          <h2
-            className="mt-6 font-display font-semibold leading-[0.95] tracking-[-0.02em] text-bone-50"
-            style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}
-          >
-            Build yours,
-            <br />
-            <span className="text-ember-500">step by step.</span>
-          </h2>
-          <p className="mt-5 max-w-md font-sans text-base leading-relaxed text-bone-200">
-            Four choices. The deck on the right re-skins on every click, with
-            the active part lit and everything else dimmed.
-          </p>
-        </header>
+      <div
+        ref={stageRef}
+        className="hidden min-h-screen flex-col px-6 py-20 sm:px-10 md:flex md:px-14"
+      >
+        <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col">
+          {/* Top row: kicker + headline + step indicator */}
+          <header className="grid items-end gap-8 md:grid-cols-[1.05fr_1fr]">
+            <div>
+              <span className="tape inline-block">03 · configure</span>
+              <h2
+                className="display-headline mt-6 text-bone-50"
+                style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
+              >
+                Build yours,
+                <br />
+                <span className="text-ember-500">step by step.</span>
+              </h2>
+              <p className="mt-5 max-w-md font-sans text-base leading-relaxed text-bone-100">
+                Scroll to move through the four axes. The deck on the right
+                relights the active part on every step.
+              </p>
+            </div>
+            <StepRail step={step} />
+          </header>
 
-        <div className="mt-12 grid gap-12 md:mt-16 md:grid-cols-[1fr_1.1fr] md:gap-16">
-          {/* Left: sticky price panel + step indicator */}
-          <div className="flex flex-col gap-6 md:sticky md:top-28 md:self-start">
-            <StepIndicator step={step} />
-            <PricePanel
-              product={product}
-              price={price}
-              sku={skuFromSelection(PRODUCT_SLUG, selection)}
-              stockInfo={stockInfo}
-              breakdown={breakdown}
-              loading={loading}
-              error={error}
-            />
+          {/* Two-column body: wizard card on the LEFT, deck reserved area on the RIGHT */}
+          <div className="mt-12 grid flex-1 grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-12">
+            <div className="flex flex-col gap-6">
+              <AnimatePresence mode="wait">
+                {step < 4 ? (
+                  <WizardCard
+                    key={`step-${step}`}
+                    step={step as 0 | 1 | 2 | 3}
+                    product={product}
+                    selection={selection}
+                    onDeck={setDeck}
+                    onWheel={setWheel}
+                    onTruck={setTruck}
+                    onGrip={setGrip}
+                    loading={loading}
+                    error={error}
+                  />
+                ) : (
+                  <ReviewCard
+                    key="review"
+                    product={product}
+                    selection={selection}
+                    price={price}
+                    stockInfo={stockInfo}
+                    breakdown={breakdown}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Right column reserved for the deck. Canvas keyframe puts the
+                deck in this region while the user is in configurator. */}
+            <div aria-hidden className="hidden md:block" />
           </div>
 
-          {/* Right: wizard body */}
-          <div className="flex flex-col gap-8">
-            {!product ? (
-              <ConfiguratorFallback
-                loading={loading}
-                error={error}
-                selection={selection}
-              />
-            ) : step < 4 ? (
-              <WizardBody
-                step={step as 0 | 1 | 2 | 3}
-                product={product}
-                selection={selection}
-                onDeck={setDeck}
-                onWheel={setWheel}
-                onTruck={setTruck}
-                onGrip={setGrip}
-              />
+          {/* Bottom row: controls */}
+          <footer className="mt-10 flex items-center justify-between border-t border-bone-50/10 pt-6">
+            <button
+              type="button"
+              onClick={() => scrollToStep(Math.max(0, step - 1) as WizardStep)}
+              disabled={step === 0}
+              data-cursor="link"
+              className="rounded-full border border-bone-50/15 px-6 py-3 font-mono text-xs tracking-[0.28em] text-bone-100 uppercase transition-colors hover:bg-bone-50/5 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              ← Back
+            </button>
+
+            <div className="hidden font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase md:block">
+              {step < 4
+                ? 'Scroll · or click next'
+                : 'Final build · ready to ship'}
+            </div>
+
+            {step < 4 ? (
+              <MagneticButton
+                type="button"
+                onClick={() => scrollToStep((step + 1) as WizardStep)}
+                innerClassName="rounded-full bg-ember-500 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400"
+              >
+                Next →
+              </MagneticButton>
             ) : (
-              <ReviewBody
-                product={product}
-                selection={selection}
-                price={price}
-                breakdown={breakdown}
-              />
+              <MagneticButton
+                type="button"
+                onClick={() => scrollToHash('#order')}
+                disabled={stockInfo !== null && !stockInfo.inStock}
+                innerClassName={clsx(
+                  'rounded-full px-12 py-4 font-mono text-sm font-medium tracking-[0.28em] uppercase transition-colors',
+                  stockInfo === null || stockInfo.inStock
+                    ? 'bg-ember-500 text-ink-950 shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_22px_60px_-12px_rgba(255,91,20,0.65)] hover:bg-ember-400'
+                    : 'cursor-not-allowed bg-bone-50/10 text-bone-300',
+                )}
+              >
+                {stockInfo && !stockInfo.inStock ? 'Out of stock' : 'Buy now →'}
+              </MagneticButton>
             )}
+          </footer>
+        </div>
+      </div>
 
-            <WizardControls
-              step={step}
-              onPrev={onPrev}
-              onNext={onNext}
-              onConfirm={() => scrollToHash('#order')}
-              stockOk={stockInfo === null ? true : stockInfo.inStock}
-            />
-          </div>
+      {/* Mobile fallback, click-driven, no pin. */}
+      <div className="flex flex-col gap-8 px-6 py-20 sm:px-10 md:hidden">
+        <span className="tape inline-block">03 · configure</span>
+        <h2
+          className="display-headline text-bone-50"
+          style={{ fontSize: 'clamp(2rem, 9vw, 3.5rem)' }}
+        >
+          Build yours,
+          <br />
+          <span className="text-ember-500">step by step.</span>
+        </h2>
+        <StepRail step={step} />
+        {step < 4 ? (
+          <WizardCard
+            step={step as 0 | 1 | 2 | 3}
+            product={product}
+            selection={selection}
+            onDeck={setDeck}
+            onWheel={setWheel}
+            onTruck={setTruck}
+            onGrip={setGrip}
+            loading={loading}
+            error={error}
+          />
+        ) : (
+          <ReviewCard
+            product={product}
+            selection={selection}
+            price={price}
+            stockInfo={stockInfo}
+            breakdown={breakdown}
+          />
+        )}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setStep((s) => Math.max(0, s - 1) as WizardStep)}
+            disabled={step === 0}
+            className="rounded-full border border-bone-50/15 px-5 py-2 font-mono text-xs tracking-[0.24em] text-bone-100 uppercase disabled:opacity-30"
+          >
+            ← Back
+          </button>
+          {step < 4 ? (
+            <button
+              type="button"
+              onClick={() => setStep((s) => Math.min(4, s + 1) as WizardStep)}
+              className="rounded-full bg-ember-500 px-6 py-2 font-mono text-xs tracking-[0.24em] text-ink-950 uppercase"
+            >
+              Next →
+            </button>
+          ) : (
+            <a
+              href="#order"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToHash('#order');
+              }}
+              className="rounded-full bg-ember-500 px-6 py-2 font-mono text-xs tracking-[0.28em] text-ink-950 uppercase"
+            >
+              Buy now →
+            </a>
+          )}
         </div>
       </div>
     </section>
@@ -245,46 +426,46 @@ export function ConfiguratorSection() {
 // ---------------------------------------------------------------------------
 // Wizard subcomponents
 
-function StepIndicator({ step }: { step: WizardStep }) {
+function StepRail({ step }: { step: WizardStep }) {
+  const label =
+    step < 4
+      ? `Step ${String(step + 1).padStart(2, '0')} / 05 · ${STEPS[step]!.axis}`
+      : 'Review · 05 / 05';
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex flex-col items-start gap-3 md:items-end">
       <p className="font-mono text-[11px] tracking-[0.32em] text-bone-200 uppercase">
-        {step < 4
-          ? `Step ${String(step + 1).padStart(2, '0')} / 04 · ${STEPS[step]!.axis}`
-          : 'Review · 04 / 04'}
+        {label}
       </p>
-      <div className="flex flex-1 items-center gap-2" aria-hidden>
-        {[0, 1, 2, 3].map((i) => {
-          const done = i < step;
-          const current = i === step;
-          return (
-            <span
-              key={i}
-              className={clsx(
-                'h-[3px] flex-1 rounded-full transition-colors',
-                done && 'bg-ember-500',
-                current && 'bg-ember-400/70',
-                !done && !current && 'bg-bone-50/10',
-              )}
-            />
-          );
-        })}
+      <div className="flex gap-1.5" aria-hidden>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span
+            key={i}
+            className={clsx(
+              'h-1 w-10 rounded-full transition-colors',
+              i < step && 'bg-ember-500',
+              i === step && 'bg-ember-400/80',
+              i > step && 'bg-bone-50/10',
+            )}
+          />
+        ))}
       </div>
     </div>
   );
 }
 
-interface WizardBodyProps {
+interface WizardCardProps {
   step: 0 | 1 | 2 | 3;
-  product: Product;
+  product: Product | null;
   selection: ConfigurationSelection;
   onDeck: (v: DeckGraphic) => void;
   onWheel: (v: WheelColor) => void;
   onTruck: (v: TruckColor) => void;
   onGrip: (v: GripPattern) => void;
+  loading: boolean;
+  error: string | null;
 }
 
-function WizardBody({
+function WizardCard({
   step,
   product,
   selection,
@@ -292,14 +473,29 @@ function WizardBody({
   onWheel,
   onTruck,
   onGrip,
-}: WizardBodyProps) {
+  loading,
+  error,
+}: WizardCardProps) {
   const def = STEPS[step]!;
+
+  if (!product) {
+    return (
+      <ConfiguratorFallback loading={loading} error={error} selection={selection} />
+    );
+  }
+
   return (
-    <div className="rounded-2xl border border-bone-50/10 bg-ink-900/55 p-6 backdrop-blur-xl md:p-8">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -24 }}
+      transition={{ duration: 0.4, ease: [0.65, 0, 0.35, 1] }}
+      className="rounded-2xl border border-bone-50/10 bg-ink-900/65 p-7 backdrop-blur-xl md:p-9"
+    >
       <p className="font-mono text-[11px] tracking-[0.32em] text-ember-400 uppercase">
         {def.axis}
       </p>
-      <p className="mt-2 max-w-md font-sans text-sm leading-relaxed text-bone-200">
+      <p className="mt-2 max-w-md font-sans text-sm leading-relaxed text-bone-100">
         {def.blurb}
       </p>
       <div className="mt-8">
@@ -336,122 +532,112 @@ function WizardBody({
           />
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-interface ReviewBodyProps {
-  product: Product;
+interface ReviewCardProps {
+  product: Product | null;
   selection: ConfigurationSelection;
   price: number | null;
+  stockInfo: VariantStockInfo | null;
   breakdown: PriceBreakdownRow[];
 }
 
-function ReviewBody({ product, selection, price, breakdown }: ReviewBodyProps) {
+function ReviewCard({
+  product,
+  selection,
+  price,
+  stockInfo,
+  breakdown,
+}: ReviewCardProps) {
   const formatEGP = (egp: number) =>
     new Intl.NumberFormat('en-EG', {
       style: 'currency',
       currency: 'EGP',
       maximumFractionDigits: 0,
     }).format(egp);
+
+  const sku = product ? skuFromSelection(product.slug, selection) : '';
+
   return (
-    <div className="rounded-2xl border border-bone-50/10 bg-ink-900/55 p-6 backdrop-blur-xl md:p-8">
-      <p className="font-mono text-[11px] tracking-[0.32em] text-ember-400 uppercase">
-        Review
-      </p>
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -24 }}
+      transition={{ duration: 0.5, ease: [0.65, 0, 0.35, 1] }}
+      className="rounded-2xl border border-bone-50/10 bg-ink-900/65 p-7 backdrop-blur-xl md:p-9"
+    >
+      <div className="flex items-baseline justify-between">
+        <p className="font-mono text-[11px] tracking-[0.32em] text-ember-400 uppercase">
+          Your build
+        </p>
+        {stockInfo && (
+          <span
+            className={clsx(
+              'rounded-full px-3 py-1 font-mono text-[10px] tracking-[0.28em] uppercase',
+              stockInfo.inStock
+                ? 'bg-bone-50/5 text-bone-200'
+                : 'bg-ember-500/10 text-ember-400',
+            )}
+          >
+            {stockInfo.inStock ? `In stock · ${stockInfo.stock}` : 'Out of stock'}
+          </span>
+        )}
+      </div>
+
       <h3
-        className="mt-3 font-display font-semibold tracking-[-0.02em] text-bone-50"
-        style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2.25rem)' }}
+        className="mt-3 font-display font-normal tracking-[-0.005em] text-bone-50"
+        style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', lineHeight: 0.9 }}
       >
-        Your PocketDeck.
+        PocketDeck assembled.
       </h3>
+
       <dl className="mt-6 divide-y divide-bone-50/10 border-y border-bone-50/10">
-        {(['deck', 'wheel', 'truck', 'grip'] as const).map((axis, i) => {
-          const opt = findOption(product, selection, axis);
-          return (
-            <div
-              key={axis}
-              className="flex items-center justify-between gap-4 py-4 font-mono text-sm text-bone-100"
-            >
-              <dt className="text-bone-300 uppercase tracking-[0.24em] text-[11px]">
-                {breakdown[i]?.axis ?? axis}
-              </dt>
-              <dd className="text-right">
-                {opt?.label}
-                {opt?.priceModifier ? (
-                  <span className="ml-3 text-ember-400">
-                    +{opt.priceModifier} EGP
-                  </span>
-                ) : null}
-              </dd>
-            </div>
-          );
-        })}
+        {breakdown.map((row) => (
+          <div
+            key={row.axis}
+            className="flex items-center justify-between gap-4 py-3 font-mono text-sm text-bone-100"
+          >
+            <dt className="text-[11px] tracking-[0.28em] text-bone-300 uppercase">
+              {row.axis}
+            </dt>
+            <dd className="text-right">
+              <span>{row.variant}</span>
+              <span
+                className={clsx(
+                  'ml-3 text-[12px]',
+                  row.amount > 0 ? 'text-ember-400' : 'text-bone-500/70',
+                )}
+              >
+                {row.amount > 0 ? `+${row.amount} EGP` : 'incl.'}
+              </span>
+            </dd>
+          </div>
+        ))}
       </dl>
+
       <div className="mt-6 flex items-baseline justify-between">
         <span className="font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase">
           Total
         </span>
-        <span className="font-display text-4xl font-semibold text-bone-50 md:text-5xl">
+        <span
+          className="font-display text-bone-50"
+          style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', lineHeight: 0.9 }}
+        >
           {price !== null ? formatEGP(price) : '—'}
         </span>
       </div>
-      <p className="mt-3 font-mono text-[11px] text-bone-300">
-        Server recomputes this on submit. Cash on delivery.
-      </p>
-    </div>
-  );
-}
 
-function WizardControls({
-  step,
-  onPrev,
-  onNext,
-  onConfirm,
-  stockOk,
-}: {
-  step: WizardStep;
-  onPrev: () => void;
-  onNext: () => void;
-  onConfirm: () => void;
-  stockOk: boolean;
-}) {
-  const isReview = step === 4;
-  return (
-    <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <button
-        type="button"
-        onClick={onPrev}
-        disabled={step === 0}
-        data-cursor="link"
-        className="rounded-full border border-bone-50/15 px-6 py-3 font-mono text-xs tracking-[0.28em] text-bone-100 uppercase transition-colors hover:bg-bone-50/5 disabled:cursor-not-allowed disabled:opacity-30"
-      >
-        ← Back
-      </button>
-      {isReview ? (
-        <MagneticButton
-          type="button"
-          onClick={onConfirm}
-          disabled={!stockOk}
-          innerClassName={clsx(
-            'rounded-full px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] uppercase transition-colors',
-            stockOk
-              ? 'bg-ember-500 text-ink-950 shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] hover:bg-ember-400'
-              : 'cursor-not-allowed bg-bone-50/10 text-bone-300',
-          )}
+      {sku && (
+        <p
+          className="mt-5 font-mono text-[10px] tracking-[0.12em] text-bone-300"
+          style={{ wordBreak: 'break-all' }}
         >
-          {stockOk ? 'Add to order →' : 'Out of stock'}
-        </MagneticButton>
-      ) : (
-        <MagneticButton
-          type="button"
-          onClick={onNext}
-          innerClassName="rounded-full bg-ember-500 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400"
-        >
-          Next →
-        </MagneticButton>
+          SKU · {sku}
+        </p>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -508,21 +694,4 @@ function computeBreakdown(
     },
     { axis: 'Grip', variant: grip?.label ?? sel.grip, amount: grip?.priceModifier ?? 0 },
   ];
-}
-
-function findOption(
-  product: Product,
-  sel: ConfigurationSelection,
-  axis: 'deck' | 'wheel' | 'truck' | 'grip',
-): VariantOption | undefined {
-  switch (axis) {
-    case 'deck':
-      return product.options.deck.find((o) => o.value === sel.deck);
-    case 'wheel':
-      return product.options.wheel.find((o) => o.value === sel.wheel);
-    case 'truck':
-      return product.options.truck.find((o) => o.value === sel.truck);
-    case 'grip':
-      return product.options.grip.find((o) => o.value === sel.grip);
-  }
 }

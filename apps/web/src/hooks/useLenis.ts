@@ -18,12 +18,14 @@ import { useScrollTrigger, ScrollTrigger } from './useScrollTrigger';
 
 /**
  * Scroll progress milestones at which the canvas opacity ramps.
- * The page has six sections of roughly equal height; the configurator finishes
- * around 4/6 = 0.66 of the total page, and we want the canvas hidden by the
- * top of Tricks (5/6 = 0.83). Hence the ramp window 0.62 to 0.75.
+ *
+ * With Anatomy pinned for 5 viewports and Configurator pinned for 5 viewports,
+ * the page is roughly 16 viewports long. The configurator review step ends at
+ * about 13/16 = 0.81, so we hold the canvas at full opacity until then and
+ * fade out across the brief gap before Tricks.
  */
-const FADE_START = 0.62;
-const FADE_END = 0.75;
+const FADE_START = 0.82;
+const FADE_END = 0.88;
 
 function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));
@@ -46,6 +48,15 @@ export function scrollToHash(hash: string): void {
     lenisSingleton.scrollTo(node, { offset: -80, duration: 1.4 });
   } else {
     node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+/** Smoothly scroll to an absolute Y position. Routes through Lenis when available. */
+export function scrollToY(y: number, durationSec = 1): void {
+  if (lenisSingleton) {
+    lenisSingleton.scrollTo(y, { duration: durationSec });
+  } else if (typeof window !== 'undefined') {
+    window.scrollTo({ top: y, behavior: 'smooth' });
   }
 }
 

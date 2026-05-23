@@ -61,8 +61,9 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
     fov: 30,
   },
   configurator: {
-    position: [-1.2, 0.8, 5.4],
-    target: [1.2, 0, 0],
+    // Camera left-back so the deck on the right reads at a 3/4 angle.
+    position: [-2.0, 1.2, 5.8],
+    target: [2.4, 1.4, 0],
     fov: 28,
   },
   tricks: {
@@ -84,9 +85,11 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
  */
 const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
   hero: {
-    position: [0.6, 0.15, 0],
+    // Pushed into the right column of the hero grid, raised slightly so it
+    // sits above the headline baseline.
+    position: [2.0, 0.35, 0],
     rotation: [-0.18, 0.45, 0.02],
-    scale: 0.58,
+    scale: 0.55,
   },
   manifesto: {
     // Pushed right so the pinned copy on the left half is uninterrupted.
@@ -100,11 +103,11 @@ const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
     scale: 0.7,
   },
   configurator: {
-    // Closer in but smaller so the model sits comfortably to the right of
-    // the price panel, not on top of it.
-    position: [1.4, 0, 0],
-    rotation: [-0.25, 0, 0],
-    scale: 0.78,
+    // Top-right of the viewport during the wizard. Positive X pushes the
+    // deck into the right column; positive Y raises it into the upper half.
+    position: [2.4, 1.4, 0],
+    rotation: [-0.25, 0.2, 0],
+    scale: 0.7,
   },
   tricks: {
     position: [0, 0.4, 0],
