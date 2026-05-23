@@ -62,18 +62,18 @@ const EXPLODE_TRUCK_FRONT = new Vector3(0.9, -0.4, 0);
 const EXPLODE_TRUCK_BACK = new Vector3(-0.9, -0.4, 0);
 const EXPLODE_WHEEL = new Vector3(0, -0.2, 0.45);
 
-/** How much a non-highlighted part dims when another part has the spotlight. */
-const DIM_FACTOR = 0.22;
+/** Opacity used for dimmed parts. */
+const DIM_OPACITY = 0.35;
 
 function applyDim(paint: MaterialPaint, dim: boolean): MaterialPaint {
   if (!dim) return paint;
   return {
     ...paint,
     color: paint.color,
-    metalness: paint.metalness * 0.4,
-    roughness: Math.min(1, paint.roughness + 0.2),
+    metalness: paint.metalness * 0.55,
+    roughness: Math.min(1, paint.roughness + 0.15),
     emissive: paint.emissive ?? '#000000',
-    emissiveIntensity: (paint.emissiveIntensity ?? 0) * 0.3,
+    emissiveIntensity: (paint.emissiveIntensity ?? 0) * 0.4,
   };
 }
 
@@ -93,7 +93,7 @@ function PaintedMaterial({
       emissive={effective.emissive ?? '#000000'}
       emissiveIntensity={effective.emissiveIntensity ?? 0}
       transparent={dim}
-      opacity={dim ? DIM_FACTOR + 0.45 : 1}
+      opacity={dim ? DIM_OPACITY : 1}
     />
   );
 }
@@ -200,14 +200,26 @@ function Wheel({ z, y, wheelPaint, exploded, explodeZ, dim }: WheelProps) {
           metalness={0.85}
           roughness={0.3}
           transparent={dim}
-          opacity={dim ? DIM_FACTOR + 0.4 : 1}
+          opacity={dim ? DIM_OPACITY : 1}
         />
       </mesh>
     </group>
   );
 }
 
-function isDimmed(highlight: DeckPart | null, part: DeckPart): boolean {
+/**
+ * Dimming is only applied in the Anatomy section, where the goal is to
+ * feature one part at a time. In the Configurator we want the entire custom
+ * skate to read at full brightness so the user can see every choice they've
+ * made; the per-step focus there comes from the camera framing, not from
+ * dimming.
+ */
+function isDimmed(
+  section: string,
+  highlight: DeckPart | null,
+  part: DeckPart,
+): boolean {
+  if (section !== 'anatomy') return false;
   return highlight !== null && highlight !== part;
 }
 
@@ -215,6 +227,7 @@ export function Deck() {
   const selection = useSceneStore((s) => s.selection);
   const exploded = useSceneStore((s) => s.exploded);
   const highlightPart = useSceneStore((s) => s.highlightPart);
+  const activeSection = useSceneStore((s) => s.activeSection);
   const rootRef = useRef<Group>(null);
   const boardRef = useRef<Group>(null);
 
@@ -223,10 +236,10 @@ export function Deck() {
   const truckPaint = useMemo(() => TRUCK_MATERIALS[selection.truck], [selection.truck]);
   const gripPaint = useMemo(() => GRIP_MATERIALS[selection.grip], [selection.grip]);
 
-  const dimDeck = isDimmed(highlightPart, 'deck');
-  const dimGrip = isDimmed(highlightPart, 'grip');
-  const dimTruck = isDimmed(highlightPart, 'truck');
-  const dimWheel = isDimmed(highlightPart, 'wheel');
+  const dimDeck = isDimmed(activeSection, highlightPart, 'deck');
+  const dimGrip = isDimmed(activeSection, highlightPart, 'grip');
+  const dimTruck = isDimmed(activeSection, highlightPart, 'truck');
+  const dimWheel = isDimmed(activeSection, highlightPart, 'wheel');
 
   useFrame(() => {
     const root = rootRef.current;
@@ -234,7 +247,11 @@ export function Deck() {
     if (!root || !board) return;
 
     const state = useSceneStore.getState();
-    const kf = getDeckKeyframe(state.activeSection, state.scrollProgress);
+    const kf = getDeckKeyframe(
+      state.activeSection,
+      state.scrollProgress,
+      state.highlightPart,
+    );
 
     root.position.x = MathUtils.lerp(root.position.x, kf.position[0], 0.08);
     root.position.y = MathUtils.lerp(root.position.y, kf.position[1], 0.08);
@@ -280,7 +297,7 @@ export function Deck() {
                 emissive={deckPaint.emissive ?? '#000000'}
                 emissiveIntensity={(deckPaint.emissiveIntensity ?? 0) * 0.5}
                 transparent={dimDeck}
-                opacity={dimDeck ? DIM_FACTOR + 0.45 : 1}
+                opacity={dimDeck ? DIM_OPACITY : 1}
               />
             </mesh>
           ) : null}
@@ -315,7 +332,7 @@ export function Deck() {
                 roughness={gripPaint.roughness}
                 metalness={gripPaint.metalness}
                 transparent={dimGrip}
-                opacity={dimGrip ? DIM_FACTOR + 0.45 : 1}
+                opacity={dimGrip ? DIM_OPACITY : 1}
               />
             </mesh>
           ) : null}

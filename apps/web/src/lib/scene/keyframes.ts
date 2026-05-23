@@ -6,8 +6,8 @@
  *
  *   hero,         deck centered above the headline anchor (text sits below)
  *   manifesto,    deck pushed to the right so the pinned copy occupies the left
- *   anatomy,      deck swung to the right of the parts list
- *   configurator, deck on a turntable axis to the right of the swatch panel
+ *   anatomy,      deck swung to the right of the parts list, per-part sub-poses
+ *   configurator, deck top-right of the viewport while the wizard takes left
  *   tricks,       deck out of frame; section runs on its own video grid
  *   order,        canvas faded, form renders against an opaque backdrop
  *
@@ -15,7 +15,7 @@
  *   deck:   width 1.6, length 5.4, thickness 0.12
  *   wheels at +/- 1.9, +/- 0.6, radius 0.25
  */
-import type { SectionId } from '@/store/scene';
+import type { SectionId, DeckPart } from '@/store/scene';
 
 export interface CameraKeyframe {
   position: [number, number, number];
@@ -56,15 +56,17 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
     fov: 34,
   },
   anatomy: {
+    // Default anatomy view; overridden per-part by ANATOMY_CAMERA below.
     position: [-1.0, 3.6, 6.4],
     target: [1.4, 0, 0],
     fov: 30,
   },
   configurator: {
-    // Camera left-back so the deck on the right reads at a 3/4 angle.
-    position: [-2.0, 1.2, 5.8],
-    target: [2.4, 1.4, 0],
-    fov: 28,
+    // Camera looks at world origin so the deck (positioned upper-right in
+    // world space) appears in the upper-right of the screen.
+    position: [0, 0.4, 6.4],
+    target: [0, 0.3, 0],
+    fov: 30,
   },
   tricks: {
     position: [4.8, 0.6, 6.8],
@@ -78,36 +80,31 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
   },
 };
 
-/**
- * Deck scale is intentionally compact, the product is called PocketDeck.
- * Tuned so the model fits roughly in one column of the layout grid instead of
- * spanning the viewport.
- */
 const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
   hero: {
-    // Pushed into the right column of the hero grid, raised slightly so it
-    // sits above the headline baseline.
     position: [2.0, 0.35, 0],
     rotation: [-0.18, 0.45, 0.02],
     scale: 0.55,
   },
   manifesto: {
-    // Pushed right so the pinned copy on the left half is uninterrupted.
     position: [1.7, 0.0, 0],
     rotation: [-0.05, 0.95, 0.18],
     scale: 0.6,
   },
   anatomy: {
+    // Default anatomy pose; overridden per-part by ANATOMY_DECK below.
     position: [1.6, 0, 0],
     rotation: [-Math.PI / 2 + 0.18, 0, 0],
     scale: 0.7,
   },
   configurator: {
-    // Top-right of the viewport during the wizard. Positive X pushes the
-    // deck into the right column; positive Y raises it into the upper half.
-    position: [2.4, 1.4, 0],
-    rotation: [-0.25, 0.2, 0],
-    scale: 0.7,
+    // World-space upper-right position so the deck appears in the top-right
+    // of the viewport. Camera looks at the world origin (see configurator
+    // camera keyframe above), so the +X +Y offset translates directly to
+    // screen position.
+    position: [1.9, 1.0, 0],
+    rotation: [-0.18, 0.35, 0],
+    scale: 0.68,
   },
   tricks: {
     position: [0, 0.4, 0],
@@ -121,7 +118,71 @@ const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
   },
 };
 
-export function getCameraKeyframe(section: SectionId): CameraKeyframe {
+/**
+ * Per-anatomy-part overrides. Each step in the anatomy scroll-pin moves the
+ * camera + deck into a pose that features that part. Bearings share the wheel
+ * pose since they live inside the wheels.
+ */
+const ANATOMY_CAMERA: Record<DeckPart, CameraKeyframe> = {
+  deck: {
+    // High angle looking down on the deck plate.
+    position: [-0.6, 4.0, 5.2],
+    target: [1.6, 0, 0],
+    fov: 28,
+  },
+  truck: {
+    // Eye-level from the left, low angle to feature the trucks underneath.
+    position: [-2.5, 0.4, 4.5],
+    target: [1.6, -0.4, 0],
+    fov: 26,
+  },
+  wheel: {
+    // Close in from the side so a wheel is prominent.
+    position: [-1.6, 0.2, 3.6],
+    target: [2.4, -0.2, 0.4],
+    fov: 24,
+  },
+  grip: {
+    // Top-down centered on the grip-tape stripe.
+    position: [-0.2, 4.6, 3.6],
+    target: [1.6, 0, 0],
+    fov: 26,
+  },
+};
+
+const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
+  deck: {
+    position: [1.6, 0, 0],
+    rotation: [-Math.PI / 2 + 0.18, 0, 0],
+    scale: 0.78,
+  },
+  truck: {
+    // Tilt up so the underside / trucks face the camera.
+    position: [1.6, 0, 0],
+    rotation: [-0.35, 0.05, 0],
+    scale: 0.8,
+  },
+  wheel: {
+    // Rotate so a wheel pair leads. Slightly canted on Z for dynamic feel.
+    position: [1.6, 0, 0],
+    rotation: [-0.25, 0.6, 0.05],
+    scale: 0.82,
+  },
+  grip: {
+    // Pure top-down; the grip is the top surface of the deck.
+    position: [1.6, 0, 0],
+    rotation: [-Math.PI / 2, 0, 0],
+    scale: 0.78,
+  },
+};
+
+export function getCameraKeyframe(
+  section: SectionId,
+  highlightPart: DeckPart | null,
+): CameraKeyframe {
+  if (section === 'anatomy' && highlightPart) {
+    return ANATOMY_CAMERA[highlightPart];
+  }
   return CAMERA_KEYFRAMES[section];
 }
 
@@ -132,11 +193,17 @@ export function getSceneOpacity(section: SectionId): number {
 export function getDeckKeyframe(
   section: SectionId,
   scrollProgress: number,
+  highlightPart: DeckPart | null,
 ): DeckKeyframe {
-  const base = DECK_KEYFRAMES[section];
+  let base: DeckKeyframe;
+  if (section === 'anatomy' && highlightPart) {
+    base = ANATOMY_DECK[highlightPart];
+  } else {
+    base = DECK_KEYFRAMES[section];
+  }
 
-  // Scroll-driven flourishes layered on top of the section target. Returned as a
-  // fresh tuple so the caller can lerp toward it without mutating the constant.
+  // Scroll-driven flourishes layered on top. Returned as a fresh tuple so
+  // the caller can lerp toward it without mutating the constant.
   let rotX = base.rotation[0];
   let rotY = base.rotation[1];
   const rotZ = base.rotation[2];

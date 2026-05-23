@@ -1,26 +1,28 @@
 'use client';
 
 /**
- * Preloader, the first-paint reveal.
+ * Preloader, deterministic first-paint reveal.
  *
- * The procedural 3D scene has no glTF / texture work yet, so Drei's
- * useProgress reports active=false and progress=100 almost immediately.
- * We layer two gates on top of that:
+ * The procedural scene has no glTF / texture work yet, so Drei's `useProgress`
+ * reports active=false with progress=100 almost instantly. To make the loader
+ * feel intentional we drive the displayed counter linearly off elapsed time
+ * over a fixed display window. When real assets exist later, we cap the
+ * displayed value at Drei's reported progress so the counter never claims
+ * "loaded" while assets are still in flight.
  *
- *   - a minimum display window (so the brand mark has a real beat to land,
- *     not a flash you can't catch)
- *   - a single stable RAF loop that interpolates the displayed counter
- *     toward the real progress value, instead of restarting on every
- *     React render
- *
- * After both gates are satisfied the overlay fades out and unmounts so it
- * never blocks pointer events.
+ * Lifecycle:
+ *   1. Mount: counter starts at 0, RAF advances it toward 100 across
+ *      MIN_DISPLAY_MS.
+ *   2. As soon as Drei reports active=false AND the counter has reached 100,
+ *      we hold for HOLD_AT_100_MS so users see the full reveal.
+ *   3. Then the overlay fades out (FADE_OUT_MS) and unmounts.
  */
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useProgress } from '@react-three/drei';
 
-const MIN_DISPLAY_MS = 1500;
+const MIN_DISPLAY_MS = 2000;
+const HOLD_AT_100_MS = 350;
 const FADE_OUT_MS = 700;
 
 export function Preloader() {
@@ -28,22 +30,24 @@ export function Preloader() {
   const [display, setDisplay] = useState(0);
   const [done, setDone] = useState(false);
   const mountedAtRef = useRef<number>(Date.now());
-  const progressRef = useRef(0);
-  progressRef.current = progress;
+  const progressRef = useRef(100); // default 100 since the scene is procedural
+  progressRef.current = progress > 0 ? progress : 100;
 
-  // Single RAF loop that lerps the displayed counter toward the live
-  // progress, regardless of how often React re-renders.
+  // RAF: linearly drive `display` from 0 -> 100 across MIN_DISPLAY_MS, but
+  // never exceed Drei's reported progress (so real asset loading reads true).
   useEffect(() => {
     let raf = 0;
     let stopped = false;
     const tick = () => {
       if (stopped) return;
-      setDisplay((prev) => {
-        const target = progressRef.current;
-        const next = prev + (target - prev) * 0.16;
-        return Math.abs(target - next) < 0.4 ? target : next;
-      });
-      raf = requestAnimationFrame(tick);
+      const elapsed = Date.now() - mountedAtRef.current;
+      const t = Math.min(1, elapsed / MIN_DISPLAY_MS);
+      const cap = progressRef.current;
+      const driven = Math.min(cap, t * 100);
+      setDisplay(driven);
+      if (t < 1 || driven < cap) {
+        raf = requestAnimationFrame(tick);
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => {
@@ -52,11 +56,13 @@ export function Preloader() {
     };
   }, []);
 
-  // Gate dismissal on (a) Drei reports inactive, (b) minimum display window.
+  // Dismiss once (a) Drei has nothing left to load, (b) the elapsed time has
+  // covered MIN_DISPLAY_MS so the counter has visibly reached 100, and (c) a
+  // brief hold at 100 has passed.
   useEffect(() => {
     if (active) return;
     const elapsed = Date.now() - mountedAtRef.current;
-    const wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
+    const wait = Math.max(0, MIN_DISPLAY_MS - elapsed) + HOLD_AT_100_MS;
     const id = window.setTimeout(() => setDone(true), wait);
     return () => window.clearTimeout(id);
   }, [active]);
@@ -152,7 +158,7 @@ export function Preloader() {
             <motion.div
               className="h-full origin-left bg-ember-500"
               animate={{ scaleX: shown / 100 }}
-              transition={{ type: 'spring', stiffness: 100, damping: 26 }}
+              transition={{ duration: 0.2, ease: 'linear' }}
               style={{ width: '100%' }}
             />
           </motion.div>
