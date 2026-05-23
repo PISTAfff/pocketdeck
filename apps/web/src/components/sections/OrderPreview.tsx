@@ -206,7 +206,9 @@ function GripAccent({
   paint: MaterialPaint;
 }) {
   const accentColor = paint.accent ?? '#1a1a22';
-  const topY = DECK.thickness / 2 + GRIP.thickness + 0.003;
+  // Lifted above the grip surface (was +0.003, too close — pattern was
+  // sort-fighting the grip layer and disappearing).
+  const topY = DECK.thickness / 2 + GRIP.thickness + 0.02;
   const gripLength = DECK.length - GRIP.inset;
   const gripWidth = DECK.width - GRIP.inset;
 
@@ -219,10 +221,10 @@ function GripAccent({
       { z: gripWidth * 0.36, w: gripWidth * 0.06 },
     ];
     return (
-      <group position={[0, topY, 0]}>
+      <group position={[0, topY, 0]} renderOrder={1}>
         {stripes.map((s, i) => (
-          <mesh key={i} position={[0, 0, s.z]}>
-            <boxGeometry args={[gripLength * 0.88, 0.006, s.w]} />
+          <mesh key={i} position={[0, 0, s.z]} renderOrder={1}>
+            <boxGeometry args={[gripLength * 0.88, 0.02, s.w]} />
             <meshStandardMaterial
               color={accentColor}
               roughness={paint.roughness}
@@ -237,23 +239,20 @@ function GripAccent({
   if (pattern === 'topo') {
     const rings = [0.14, 0.24, 0.34, 0.44, 0.54, 0.64];
     return (
-      <group position={[0, topY, 0]}>
+      <group position={[0, topY, 0]} renderOrder={1}>
         {rings.map((scale, i) => (
           <mesh
             key={i}
-            // -PI/2 so the ring's normal points +Y (toward an overhead
-            // camera). +PI/2 was pointing it -Y and the lit side was
-            // hidden underneath, leaving the camera looking at the unlit
-            // back face.
             rotation={[-Math.PI / 2, 0, 0]}
             scale={[gripLength * scale, gripWidth * scale * 0.55, 1]}
+            renderOrder={1}
           >
             <ringGeometry args={[0.45, 0.5, 64]} />
             <meshStandardMaterial
               color={accentColor}
               roughness={paint.roughness}
               metalness={paint.metalness}
-              transparent
+              transparent={i > 0}
               opacity={1 - i * 0.06}
               side={2}
             />
@@ -279,10 +278,10 @@ function GripAccent({
   }
   const dotR = gripWidth * 0.025;
   return (
-    <group position={[0, topY, 0]}>
+    <group position={[0, topY, 0]} renderOrder={1}>
       {dots.map((d, i) => (
-        <mesh key={i} position={[d.x, 0, d.z]}>
-          <cylinderGeometry args={[dotR, dotR, 0.005, 16]} />
+        <mesh key={i} position={[d.x, 0, d.z]} renderOrder={1}>
+          <cylinderGeometry args={[dotR, dotR, 0.015, 16]} />
           <meshStandardMaterial
             color={accentColor}
             roughness={paint.roughness}

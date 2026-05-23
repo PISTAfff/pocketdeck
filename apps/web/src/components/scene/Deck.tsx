@@ -145,15 +145,19 @@ function GripPatternAccent({
   dimOpacity: number;
 }) {
   const accentColor = paint.accent ?? '#1a1a22';
-  const topY = DECK.thickness / 2 + GRIP.thickness + 0.003;
+  // Sit clearly above the grip surface (was +0.003, too close — was
+  // sort-fighting the grip layer's transparent material and getting hidden).
+  const topY = DECK.thickness / 2 + GRIP.thickness + 0.02;
   const gripLength = DECK.length - GRIP.inset;
   const gripWidth = DECK.width - GRIP.inset;
 
   const opacity = dim ? dimOpacity : 1;
+  // Only switch into the transparent render queue if we actually need
+  // alpha. When opacity is 1 we render opaque, which guarantees the
+  // accent wins over the (always-transparent) grip layer underneath.
+  const useTransparent = opacity < 1;
 
   if (pattern === 'tiger') {
-    // 5 horizontal stripes (along the length) with two slightly thinner
-    // end stripes for a real tiger / racing look.
     const stripes = [
       { z: -gripWidth * 0.36, w: gripWidth * 0.06 },
       { z: -gripWidth * 0.18, w: gripWidth * 0.08 },
@@ -162,15 +166,15 @@ function GripPatternAccent({
       { z: gripWidth * 0.36, w: gripWidth * 0.06 },
     ];
     return (
-      <group position={[0, topY, 0]}>
+      <group position={[0, topY, 0]} renderOrder={1}>
         {stripes.map((s, i) => (
-          <mesh key={i} position={[0, 0, s.z]}>
-            <boxGeometry args={[gripLength * 0.88, 0.006, s.w]} />
+          <mesh key={i} position={[0, 0, s.z]} renderOrder={1}>
+            <boxGeometry args={[gripLength * 0.88, 0.02, s.w]} />
             <meshStandardMaterial
               color={accentColor}
               roughness={paint.roughness}
               metalness={paint.metalness}
-              transparent
+              transparent={useTransparent}
               opacity={opacity}
             />
           </mesh>
@@ -180,27 +184,24 @@ function GripPatternAccent({
   }
 
   if (pattern === 'topo') {
-    // 6 concentric rings, slight opacity falloff outward for a topo-map
-    // contour feel. Rings rendered as flat ring-geometry quads.
     const rings = [0.14, 0.24, 0.34, 0.44, 0.54, 0.64];
     return (
-      <group position={[0, topY, 0]}>
+      <group position={[0, topY, 0]} renderOrder={1}>
         {rings.map((scale, i) => (
           <mesh
             key={i}
-            // -PI/2 (not +PI/2): ringGeometry's normal is +Z by default;
-            // rotating -PI/2 around X maps +Z to +Y so the ring faces up
-            // toward the overhead camera. With +PI/2 the ring's normal
-            // flips to -Y (down) and the camera sees the unlit back face.
+            // -PI/2 so the ring's normal points +Y toward the overhead
+            // camera. With +PI/2 the camera saw the unlit back face.
             rotation={[-Math.PI / 2, 0, 0]}
             scale={[gripLength * scale, gripWidth * scale * 0.55, 1]}
+            renderOrder={1}
           >
             <ringGeometry args={[0.45, 0.5, 64]} />
             <meshStandardMaterial
               color={accentColor}
               roughness={paint.roughness}
               metalness={paint.metalness}
-              transparent
+              transparent={useTransparent || i > 0}
               opacity={opacity * (1 - i * 0.06)}
               side={2}
             />
@@ -226,15 +227,15 @@ function GripPatternAccent({
   }
   const dotR = gripWidth * 0.025;
   return (
-    <group position={[0, topY, 0]}>
+    <group position={[0, topY, 0]} renderOrder={1}>
       {dots.map((d, i) => (
-        <mesh key={i} position={[d.x, 0, d.z]}>
-          <cylinderGeometry args={[dotR, dotR, 0.005, 16]} />
+        <mesh key={i} position={[d.x, 0, d.z]} renderOrder={1}>
+          <cylinderGeometry args={[dotR, dotR, 0.015, 16]} />
           <meshStandardMaterial
             color={accentColor}
             roughness={paint.roughness}
             metalness={paint.metalness}
-            transparent
+            transparent={useTransparent}
             opacity={opacity}
           />
         </mesh>
