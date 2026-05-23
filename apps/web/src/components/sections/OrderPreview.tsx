@@ -185,20 +185,83 @@ function RotatingDeck({ autoRotate }: RotatingDeckProps) {
       >
         <Mat paint={gripPaint} />
       </RoundedBox>
-      {gripPaint.accent && (
-        <mesh position={[0, DECK.thickness / 2 + GRIP.thickness + 0.001, 0]}>
-          <boxGeometry
-            args={[
-              (DECK.length - GRIP.inset) * 0.7,
-              0.003,
-              (DECK.width - GRIP.inset) * 0.18,
-            ]}
-          />
-          <meshStandardMaterial color={gripPaint.accent} />
-        </mesh>
-      )}
+      <GripAccent pattern={selection.grip} paint={gripPaint} />
       <Truck isFront truckPaint={truckPaint} wheelPaint={wheelPaint} />
       <Truck isFront={false} truckPaint={truckPaint} wheelPaint={wheelPaint} />
+    </group>
+  );
+}
+
+/**
+ * Pattern-specific grip accent for the order preview. Mirrors the
+ * GripPatternAccent helper in Deck.tsx, so the review and the main
+ * configurator scene show the same grip patterns.
+ */
+function GripAccent({
+  pattern,
+  paint,
+}: {
+  pattern: 'classic' | 'tiger' | 'topo';
+  paint: MaterialPaint;
+}) {
+  const accentColor = paint.accent ?? '#1a1a22';
+  const topY = DECK.thickness / 2 + GRIP.thickness + 0.002;
+  const gripLength = DECK.length - GRIP.inset;
+  const gripWidth = DECK.width - GRIP.inset;
+
+  if (pattern === 'tiger') {
+    return (
+      <group position={[0, topY, 0]}>
+        {[-gripWidth * 0.28, 0, gripWidth * 0.28].map((z, i) => (
+          <mesh key={i} position={[0, 0, z]}>
+            <boxGeometry args={[gripLength * 0.86, 0.005, gripWidth * 0.08]} />
+            <meshStandardMaterial
+              color={accentColor}
+              roughness={paint.roughness}
+              metalness={paint.metalness}
+            />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
+  if (pattern === 'topo') {
+    const rings = [0.18, 0.32, 0.46, 0.6];
+    return (
+      <group position={[0, topY, 0]}>
+        {rings.map((scale, i) => (
+          <mesh
+            key={i}
+            rotation={[Math.PI / 2, 0, 0]}
+            scale={[gripLength * scale, gripWidth * scale * 0.55, 1]}
+          >
+            <ringGeometry args={[0.45, 0.5, 48]} />
+            <meshStandardMaterial
+              color={accentColor}
+              roughness={paint.roughness}
+              metalness={paint.metalness}
+              side={2}
+            />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
+  // classic
+  return (
+    <group position={[0, topY, 0]}>
+      {[-gripLength * 0.28, 0, gripLength * 0.28].map((x, i) => (
+        <mesh key={i} position={[x, 0, 0]}>
+          <cylinderGeometry args={[gripWidth * 0.06, gripWidth * 0.06, 0.004, 24]} />
+          <meshStandardMaterial
+            color={accentColor}
+            roughness={paint.roughness}
+            metalness={paint.metalness}
+          />
+        </mesh>
+      ))}
     </group>
   );
 }

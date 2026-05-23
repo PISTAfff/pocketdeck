@@ -110,23 +110,26 @@ export const TRUCK_MATERIALS: Record<TruckColor, MaterialPaint> = {
   },
 };
 
-// --- Grip. The grip swatches use SVG thumbnails rather than a single hex;
-// we keep the base+accent palette aligned to the SVG colors.
+// --- Grip. The swatches are SVG thumbnails; the 3D base + accent are
+// tuned so each pattern is clearly distinct on the deck top.
 export const GRIP_MATERIALS: Record<GripPattern, MaterialPaint> = {
   classic: {
+    // Pure grit, dark base + slightly lighter dotted accent.
     color: '#0a0a0e',
-    accent: '#1f1f26',
+    accent: '#2a2a30',
     metalness: 0.05,
     roughness: 0.95,
   },
   tiger: {
-    color: '#0a0a0e',
+    // Black base with a strong orange tiger stripe.
+    color: '#0e0a06',
     accent: '#f59e0b',
     metalness: 0.05,
     roughness: 0.9,
   },
   topo: {
-    color: '#0a0a0e',
+    // Subtle teal-green base with a bright topo line accent.
+    color: '#05120e',
     accent: '#34d399',
     metalness: 0.08,
     roughness: 0.85,

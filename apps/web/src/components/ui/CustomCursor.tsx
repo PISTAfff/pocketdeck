@@ -46,11 +46,15 @@ export function CustomCursor() {
 
   if (!visible) return null;
 
+  // z-index is intentionally above the fullscreen Review & Buy preview
+  // overlay (z-[120]) so the cursor stays visible while the user drags
+  // the deck around. Native cursor is hidden by `cursor: none` in
+  // globals.css, so the custom one is the only thing the user sees.
   return (
     <>
       <motion.div
         aria-hidden
-        className="pointer-events-none fixed top-0 left-0 z-[100] mix-blend-difference"
+        className="pointer-events-none fixed top-0 left-0 z-[150] mix-blend-difference"
         style={{ x: sx, y: sy }}
       >
         <motion.div
@@ -65,7 +69,7 @@ export function CustomCursor() {
       </motion.div>
       <motion.div
         aria-hidden
-        className="pointer-events-none fixed top-0 left-0 z-[99]"
+        className="pointer-events-none fixed top-0 left-0 z-[149]"
         style={{ x, y }}
       >
         <div

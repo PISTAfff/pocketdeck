@@ -125,6 +125,98 @@ function PaintedMaterial({
   );
 }
 
+/**
+ * Pattern-specific grip accent geometry. Each grip pattern gets its own
+ * recognizable shape rendered just above the grip layer so the user can
+ * tell the patterns apart in the configurator.
+ *
+ *   classic: dotted texture (3 small rounded marks down the centre)
+ *   tiger:   3 parallel orange stripes across the deck width
+ *   topo:    3 concentric ellipse rings stacked at the centre
+ */
+function GripPatternAccent({
+  pattern,
+  paint,
+  dim,
+  dimOpacity,
+}: {
+  pattern: 'classic' | 'tiger' | 'topo';
+  paint: MaterialPaint;
+  dim: boolean;
+  dimOpacity: number;
+}) {
+  const accentColor = paint.accent ?? '#1a1a22';
+  const topY = DECK.thickness / 2 + GRIP.thickness + 0.002;
+  const gripLength = DECK.length - GRIP.inset;
+  const gripWidth = DECK.width - GRIP.inset;
+
+  const opacity = dim ? dimOpacity : 1;
+
+  // Shared material props for accent meshes.
+  const mat = (
+    <meshStandardMaterial
+      color={accentColor}
+      roughness={paint.roughness}
+      metalness={paint.metalness}
+      transparent
+      opacity={opacity}
+    />
+  );
+
+  if (pattern === 'tiger') {
+    // 3 horizontal stripes (along the length) — bright orange tiger bars.
+    return (
+      <group position={[0, topY, 0]}>
+        {[-gripWidth * 0.28, 0, gripWidth * 0.28].map((z, i) => (
+          <mesh key={i} position={[0, 0, z]}>
+            <boxGeometry args={[gripLength * 0.86, 0.005, gripWidth * 0.08]} />
+            {mat}
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
+  if (pattern === 'topo') {
+    // 4 concentric ellipses, drawn as flat thin rings via thin boxes.
+    // Using torus would be ideal but a flat box ring keeps geometry cheap.
+    const rings = [0.18, 0.32, 0.46, 0.6];
+    return (
+      <group position={[0, topY, 0]}>
+        {rings.map((scale, i) => (
+          <mesh
+            key={i}
+            rotation={[Math.PI / 2, 0, 0]}
+            scale={[gripLength * scale, gripWidth * scale * 0.55, 1]}
+          >
+            <ringGeometry args={[0.45, 0.5, 48]} />
+            <meshStandardMaterial
+              color={accentColor}
+              roughness={paint.roughness}
+              metalness={paint.metalness}
+              transparent
+              opacity={opacity * 0.95}
+              side={2}
+            />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
+
+  // classic: 3 subtle dots/dashes along the centre line.
+  return (
+    <group position={[0, topY, 0]}>
+      {[-gripLength * 0.28, 0, gripLength * 0.28].map((x, i) => (
+        <mesh key={i} position={[x, 0, 0]}>
+          <cylinderGeometry args={[gripWidth * 0.06, gripWidth * 0.06, 0.004, 24]} />
+          {mat}
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 interface TruckProps {
   isFront: boolean;
   truckPaint: MaterialPaint;
@@ -378,26 +470,17 @@ export function Deck() {
           >
             <PaintedMaterial paint={gripPaint} dim={dimGrip} glow={glowGrip} />
           </RoundedBox>
-          {gripPaint.accent ? (
-            <mesh
-              position={[0, DECK.thickness / 2 + GRIP.thickness + 0.001, 0]}
-            >
-              <boxGeometry
-                args={[
-                  (DECK.length - GRIP.inset) * 0.7,
-                  0.003,
-                  (DECK.width - GRIP.inset) * 0.18,
-                ]}
-              />
-              <meshStandardMaterial
-                color={gripPaint.accent}
-                roughness={gripPaint.roughness}
-                metalness={gripPaint.metalness}
-                transparent
-                opacity={dimGrip ? dimOp : 1}
-              />
-            </mesh>
-          ) : null}
+
+          {/* Pattern-specific grip accent geometry. Each pattern (tiger,
+              topo) renders its own distinctive shape so swapping patterns
+              in the configurator produces a clearly visible change. The
+              classic pattern stays minimal (just the dark grit base). */}
+          <GripPatternAccent
+            pattern={selection.grip}
+            paint={gripPaint}
+            dim={dimGrip}
+            dimOpacity={dimOp}
+          />
         </group>
 
         <Truck
