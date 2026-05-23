@@ -73,6 +73,20 @@ export function scrollToY(y: number, durationSec = 0.6): void {
   }
 }
 
+/**
+ * Pause Lenis. Wheel / touch / arrow-key scrolls are swallowed until
+ * `resumeScroll()` runs. Used by the Review & Buy fullscreen overlay so
+ * dragging the deck doesn't accidentally scroll the page underneath.
+ */
+export function pauseScroll(): void {
+  lenisSingleton?.stop();
+}
+
+/** Resume Lenis after pauseScroll(). */
+export function resumeScroll(): void {
+  lenisSingleton?.start();
+}
+
 export function useLenis() {
   const lenisRef = useRef<Lenis | null>(null);
   useScrollTrigger();

@@ -26,6 +26,7 @@ import { GOVERNORATES } from './governorates';
 import { Field, FieldError } from './OrderFields';
 import { OrderSummary } from './OrderSummary';
 import { OrderPreview } from './OrderPreview';
+import { pauseScroll, resumeScroll } from '@/hooks/useLenis';
 import {
   handleSubmitError,
   type FieldErrors,
@@ -114,8 +115,11 @@ export function OrderSection() {
     return () => observer.disconnect();
   }, [setActiveSection]);
 
-  // Esc closes the fullscreen preview. Lock body scroll while expanded
-  // so the user can't accidentally scroll the page underneath.
+  // While the fullscreen preview is open:
+  //   - Esc collapses it back
+  //   - body overflow is locked (defence in depth)
+  //   - Lenis is stopped so wheel / touch / arrow keys can't scroll the
+  //     page underneath; OrbitControls still receives wheel for zoom.
   useEffect(() => {
     if (!previewExpanded) return;
     const onKey = (e: KeyboardEvent) => {
@@ -124,9 +128,11 @@ export function OrderSection() {
     window.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    pauseScroll();
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
+      resumeScroll();
     };
   }, [previewExpanded]);
 
