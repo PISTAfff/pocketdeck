@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next';
+import { SceneRoot } from '@/components/scene/SceneRoot';
+import { ChromeRoot } from '@/components/layout/ChromeRoot';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -20,22 +22,23 @@ export const viewport: Viewport = {
 };
 
 /**
- * Root layout. Hosts:
- *   - the persistent <SceneRoot /> WebGL canvas (filled in by Phase 2B)
- *   - the persistent <ChromeRoot /> (cursor, scroll provider, transitions; Phase 2C)
- *   - {children} — page content that may unmount/remount on route change
+ * Root layout.
  *
- * The canvas and chrome MUST NOT unmount when routes change. Pages can read
- * scene state via the Zustand store exposed by Phase 2B.
+ * <SceneRoot /> is the persistent fixed-position R3F canvas. It must NOT
+ * unmount when routes change — that's why it lives here and not in a page.
+ *
+ * <ChromeRoot /> wraps {children} with the cursor, the Lenis scroll provider,
+ * page transitions, and any other persistent UI chrome.
+ *
+ * Pages read scene state and drive section changes via the Zustand store
+ * exposed by SceneRoot (see apps/web/src/store/scene.ts).
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {/* Phase 2B will replace this placeholder with a real R3F canvas. */}
-        <div className="scene-root" aria-hidden />
-        {/* Phase 2C will wrap children in ChromeRoot (cursor, lenis provider, page transitions). */}
-        <div className="page-root">{children}</div>
+        <SceneRoot />
+        <ChromeRoot>{children}</ChromeRoot>
       </body>
     </html>
   );
