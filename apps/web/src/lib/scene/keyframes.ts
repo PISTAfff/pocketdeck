@@ -161,6 +161,62 @@ const ANATOMY_CAMERA: Record<DeckPart, CameraKeyframe> = {
   },
 };
 
+/**
+ * Per-step overrides for the Configure wizard. Same idea as ANATOMY_*: when
+ * the active wizard step's highlightPart is set, the camera and deck pose
+ * shift so the active component is the subject of the frame.
+ *
+ * The deck stays in the right column of the layout (X = 1.5) and the
+ * camera looks slightly to the left of the deck (target near origin) so
+ * perspective pushes the deck into the right half of the viewport, leaving
+ * the left + bottom of the page clear for the wizard card and controls.
+ */
+const CONFIGURATOR_CAMERA: Record<DeckPart, CameraKeyframe> = {
+  deck: {
+    position: [-0.6, 3.8, 4.8],
+    target: [0.3, 0.2, 0],
+    fov: 26,
+  },
+  wheel: {
+    position: [-1.4, 0.4, 3.0],
+    target: [0.6, -0.1, 0.3],
+    fov: 22,
+  },
+  truck: {
+    position: [-2.2, 0.5, 3.8],
+    target: [0.4, -0.25, 0],
+    fov: 24,
+  },
+  grip: {
+    position: [-0.1, 4.4, 3.4],
+    target: [0.4, 0, 0],
+    fov: 24,
+  },
+};
+
+const CONFIGURATOR_DECK: Record<DeckPart, DeckKeyframe> = {
+  deck: {
+    position: [1.5, 0, 0],
+    rotation: [-Math.PI / 2 + 0.1, 0, 0],
+    scale: 0.45,
+  },
+  wheel: {
+    position: [1.5, 0, 0],
+    rotation: [-0.2, 0.6, 0.04],
+    scale: 0.5,
+  },
+  truck: {
+    position: [1.5, 0, 0],
+    rotation: [-0.46, 0.15, 0],
+    scale: 0.5,
+  },
+  grip: {
+    position: [1.5, 0, 0],
+    rotation: [-Math.PI / 2, 0, 0],
+    scale: 0.45,
+  },
+};
+
 const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
   // Scales kept under ~0.4 so the deck's projected width stays inside the
   // right column (~45vw, #18). Position X is also reduced so the wheels
@@ -194,6 +250,9 @@ export function getCameraKeyframe(
   if (section === 'anatomy' && highlightPart) {
     return ANATOMY_CAMERA[highlightPart];
   }
+  if (section === 'configurator' && highlightPart) {
+    return CONFIGURATOR_CAMERA[highlightPart];
+  }
   return CAMERA_KEYFRAMES[section];
 }
 
@@ -209,6 +268,8 @@ export function getDeckKeyframe(
   let base: DeckKeyframe;
   if (section === 'anatomy' && highlightPart) {
     base = ANATOMY_DECK[highlightPart];
+  } else if (section === 'configurator' && highlightPart) {
+    base = CONFIGURATOR_DECK[highlightPart];
   } else {
     base = DECK_KEYFRAMES[section];
   }

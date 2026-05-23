@@ -20,15 +20,14 @@ import { useScrollTrigger, ScrollTrigger } from './useScrollTrigger';
  * Scroll progress milestones at which the canvas opacity ramps.
  *
  * Page layout (in viewports of document scroll):
- *   Hero 1, Manifesto 1, Anatomy 5 (pinned), Configurator 5 (pinned),
- *   Tricks ~1.2, Order ~1.5, Footer ~0.7. Total ~15.4 viewports.
+ *   Hero 1, Manifesto 1, Anatomy 5 (pinned), Configurator 1 (click only),
+ *   Tricks ~1.2, Order ~1.5, Footer ~0.7. Total ~11.4 viewports.
  *
- * The configurator review step ends around 12 / 15.4 = 0.78, so we hold
- * the canvas at full opacity until then and fade out across the brief gap
- * before Tricks.
+ * The configurator ends around 8 / 11.4 = 0.70, so we hold the canvas at
+ * full opacity until then and fade out across the brief gap before Tricks.
  */
-const FADE_START = 0.78;
-const FADE_END = 0.84;
+const FADE_START = 0.7;
+const FADE_END = 0.78;
 
 function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));

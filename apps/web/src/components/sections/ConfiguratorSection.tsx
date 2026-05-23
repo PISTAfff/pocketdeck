@@ -41,8 +41,7 @@ import { useSceneStore, type DeckPart } from '@/store/scene';
 import { useConfiguratorStore } from '@/store/configurator';
 import { getProduct } from '@/lib/api';
 import { MagneticButton } from '@/components/ui/MagneticButton';
-import { scrollToHash, scrollToY } from '@/hooks/useLenis';
-import { useScrollTrigger, gsap } from '@/hooks/useScrollTrigger';
+import { scrollToHash } from '@/hooks/useLenis';
 import { SwatchRow } from './SwatchRow';
 import {
   ConfiguratorFallback,
@@ -53,8 +52,6 @@ import {
 const PRODUCT_SLUG = 'pocketdeck';
 
 type WizardStep = 0 | 1 | 2 | 3 | 4;
-const STEP_COUNT = 5; // four axes + review
-const PIN_VIEWPORTS = STEP_COUNT - 1; // 4 viewports of pinned scroll => 5 snap positions
 
 interface StepDef {
   index: 0 | 1 | 2 | 3;
@@ -91,7 +88,6 @@ const STEPS: readonly StepDef[] = [
 ];
 
 export function ConfiguratorSection() {
-  const ScrollTrigger = useScrollTrigger();
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
   const setHighlightPart = useSceneStore((s) => s.setHighlightPart);
   const selection = useSceneStore((s) => s.selection);
@@ -131,71 +127,16 @@ export function ConfiguratorSection() {
     };
   }, [setProduct, setLoading, setError]);
 
-  // Desktop: pin the section and convert scroll into step changes.
+  // Steps are now CLICK-only. Scroll no longer drives the wizard, which
+  // also closes the race between swatch clicks and ScrollTrigger snaps
+  // that was occasionally landing a click on the "wrong" axis (#color bug).
+  //
+  // We still need to:
+  //   - mark this section as the active section when it's in view
+  //   - push the current step's highlightPart so the 3D deck reframes per
+  //     step (Wheels => zoom on wheels, Trucks => low-angle on trucks, etc.)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const section = sectionRef.current;
-    const stage = stageRef.current;
-    if (!section || !stage) return;
-
-    const mm = gsap.matchMedia();
-
-    mm.add('(min-width: 768px)', () => {
-      const ctx = gsap.context(() => {
-        ScrollTrigger.create({
-          trigger: section,
-          start: 'top top',
-          end: `+=${PIN_VIEWPORTS * 100}%`,
-          pin: stage,
-          pinSpacing: true,
-          scrub: false,
-          snap: {
-            snapTo: 1 / PIN_VIEWPORTS,
-            duration: { min: 0.2, max: 0.5 },
-            ease: 'power2.inOut',
-          },
-          onEnter: () => {
-            setActiveSection('configurator');
-            const cur = stepRef.current;
-            const def = STEPS.find((s) => s.index === cur);
-            setHighlightPart(def ? def.part : null);
-          },
-          onEnterBack: () => {
-            setActiveSection('configurator');
-            const cur = stepRef.current;
-            const def = STEPS.find((s) => s.index === cur);
-            setHighlightPart(def ? def.part : null);
-          },
-          onLeave: () => setHighlightPart(null),
-          onLeaveBack: () => setHighlightPart(null),
-          onUpdate: (self) => {
-            const i = Math.min(
-              STEP_COUNT - 1,
-              Math.round(self.progress * (STEP_COUNT - 1)),
-            ) as WizardStep;
-            if (i !== stepRef.current) {
-              stepRef.current = i;
-              setStep(i);
-              const def = STEPS.find((s) => s.index === i);
-              setHighlightPart(def ? def.part : null);
-            }
-          },
-        });
-      }, section);
-
-      return () => ctx.revert();
-    });
-
-    return () => {
-      mm.revert();
-      setHighlightPart(null);
-    };
-  }, [ScrollTrigger, setActiveSection, setHighlightPart]);
-
-  // Mobile: also drive activeSection / highlightPart via IntersectionObserver.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(min-width: 768px)').matches) return;
     const node = sectionRef.current;
     if (!node) return;
     const observer = new IntersectionObserver(
@@ -215,6 +156,14 @@ export function ConfiguratorSection() {
     return () => observer.disconnect();
   }, [setActiveSection, setHighlightPart]);
 
+  // Keep the scene's highlightPart in lock-step with the click-driven
+  // wizard step. This is what drives the per-step camera reframing.
+  useEffect(() => {
+    stepRef.current = step;
+    const def = STEPS.find((s) => s.index === step);
+    setHighlightPart(def ? def.part : null);
+  }, [step, setHighlightPart]);
+
   const price = useMemo(() => computePrice(product, selection), [product, selection]);
   const stockInfo = useMemo(
     () => computeStock(product, selection),
@@ -225,37 +174,22 @@ export function ConfiguratorSection() {
     [product, selection],
   );
 
-  /** Smoothly jump to step k via Lenis-scrolling the page to the matching pin position. */
-  const scrollToStep = (k: WizardStep) => {
-    const section = sectionRef.current;
-    if (!section) {
-      setStep(k);
-      return;
-    }
-    const sectionTop = section.getBoundingClientRect().top + window.scrollY;
-    const totalScroll = window.innerHeight * PIN_VIEWPORTS;
-    // Bias slightly past each snap point so ScrollTrigger's snap doesn't bounce
-    // us backwards on a tie.
-    const targetY = sectionTop + (k / (STEP_COUNT - 1)) * totalScroll + 2;
-    scrollToY(targetY, 0.7);
+  /** Jump to step k. Pure state mutation, no scroll involvement. */
+  const goToStep = (k: WizardStep) => {
+    setStep(k);
   };
 
   return (
     <section
       ref={sectionRef}
       id="configurator"
-      // No background fill: the persistent canvas (z-0) needs to show
-      // through this section so the deck reads in the right column. The
-      // body is already ink-950, so the visual remains dark.
+      // No background fill: the persistent canvas needs to read through this
+      // section. The body is already ink-950, so the page stays dark.
       className="relative"
-      style={{
-        // Five steps means four "advances" * 100vh + one starting viewport.
-        minHeight: `${PIN_VIEWPORTS * 100 + 100}vh`,
-      }}
     >
       <div
         ref={stageRef}
-        className="hidden min-h-screen flex-col px-6 py-20 sm:px-10 md:flex md:px-14"
+        className="hidden min-h-screen flex-col px-6 py-24 sm:px-10 md:flex md:px-14"
       >
         <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col">
           {/* Top row: kicker + headline + step indicator */}
@@ -275,7 +209,7 @@ export function ConfiguratorSection() {
                 relights the active part on every step.
               </p>
             </div>
-            <StepRail step={step} onJump={(target) => scrollToStep(target)} />
+            <StepRail step={step} onJump={(target) => goToStep(target)} />
           </header>
 
           {/* Two-column body: wizard card on the LEFT, deck reserved area on the RIGHT */}
@@ -319,7 +253,7 @@ export function ConfiguratorSection() {
           <footer className="mt-10 flex items-center justify-between border-t border-bone-50/10 pt-6">
             <button
               type="button"
-              onClick={() => scrollToStep(Math.max(0, step - 1) as WizardStep)}
+              onClick={() => goToStep(Math.max(0, step - 1) as WizardStep)}
               disabled={step === 0}
               data-cursor="link"
               className="rounded-full bg-ink-700 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-bone-50 uppercase transition-colors hover:bg-ink-600 disabled:cursor-not-allowed disabled:opacity-30"
@@ -329,14 +263,14 @@ export function ConfiguratorSection() {
 
             <div className="hidden font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase md:block">
               {step < 4
-                ? 'Scroll · or click next'
+                ? 'Click Next to lock in this axis'
                 : 'Final build · ready to ship'}
             </div>
 
             {step < 4 ? (
               <MagneticButton
                 type="button"
-                onClick={() => scrollToStep((step + 1) as WizardStep)}
+                onClick={() => goToStep((step + 1) as WizardStep)}
                 innerClassName="rounded-full bg-ember-500 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400"
               >
                 Next →
