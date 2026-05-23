@@ -42,6 +42,7 @@ import { useConfiguratorStore } from '@/store/configurator';
 import { getProduct } from '@/lib/api';
 import { MagneticButton } from '@/components/ui/MagneticButton';
 import { scrollToHash } from '@/hooks/useLenis';
+import { useScrollTrigger, gsap } from '@/hooks/useScrollTrigger';
 import { SwatchRow } from './SwatchRow';
 import {
   ConfiguratorFallback,
@@ -88,6 +89,7 @@ const STEPS: readonly StepDef[] = [
 ];
 
 export function ConfiguratorSection() {
+  const ScrollTrigger = useScrollTrigger();
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
   const setHighlightPart = useSceneStore((s) => s.setHighlightPart);
   const selection = useSceneStore((s) => s.selection);
@@ -127,34 +129,89 @@ export function ConfiguratorSection() {
     };
   }, [setProduct, setLoading, setError]);
 
-  // Steps are now CLICK-only. Scroll no longer drives the wizard, which
-  // also closes the race between swatch clicks and ScrollTrigger snaps
-  // that was occasionally landing a click on the "wrong" axis (#color bug).
-  //
-  // We still need to:
-  //   - mark this section as the active section when it's in view
-  //   - push the current step's highlightPart so the 3D deck reframes per
-  //     step (Wheels => zoom on wheels, Trucks => low-angle on trucks, etc.)
+  // Steps are CLICK-only. The pin below just parks the stage so the deck
+  // sits exactly where it should while the user clicks through axes; it
+  // never advances the step on its own. Releasing the pin takes ~2
+  // viewports of scroll, so leaving the section is a deliberate gesture.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const node = sectionRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting && e.intersectionRatio > 0.3) {
+    const section = sectionRef.current;
+    const stage = stageRef.current;
+    if (!section || !stage) return;
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const mm = gsap.matchMedia();
+
+    mm.add('(min-width: 768px)', () => {
+      if (reduced) {
+        // Reduced motion: don't pin. Use an IntersectionObserver instead.
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting && e.intersectionRatio > 0.3) {
+                setActiveSection('configurator');
+                const def = STEPS.find((s) => s.index === stepRef.current);
+                setHighlightPart(def ? def.part : null);
+              }
+            }
+          },
+          { threshold: [0.3] },
+        );
+        io.observe(section);
+        return () => io.disconnect();
+      }
+
+      const ctx = gsap.context(() => {
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top top',
+          // ~2 viewports of pinned scroll: enough that releasing requires a
+          // deliberate push, but no snap and no step-driving logic.
+          end: '+=200%',
+          pin: stage,
+          pinSpacing: true,
+          onEnter: () => {
             setActiveSection('configurator');
-            const cur = stepRef.current;
-            const def = STEPS.find((s) => s.index === cur);
+            const def = STEPS.find((s) => s.index === stepRef.current);
             setHighlightPart(def ? def.part : null);
+          },
+          onEnterBack: () => {
+            setActiveSection('configurator');
+            const def = STEPS.find((s) => s.index === stepRef.current);
+            setHighlightPart(def ? def.part : null);
+          },
+          onLeave: () => setHighlightPart(null),
+          onLeaveBack: () => setHighlightPart(null),
+        });
+      }, section);
+      return () => ctx.revert();
+    });
+
+    // Mobile fallback: no pin, IntersectionObserver to keep the section
+    // active while in view.
+    mm.add('(max-width: 767px)', () => {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting && e.intersectionRatio > 0.3) {
+              setActiveSection('configurator');
+              const def = STEPS.find((s) => s.index === stepRef.current);
+              setHighlightPart(def ? def.part : null);
+            }
           }
-        }
-      },
-      { threshold: [0.3] },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [setActiveSection, setHighlightPart]);
+        },
+        { threshold: [0.3] },
+      );
+      io.observe(section);
+      return () => io.disconnect();
+    });
+
+    return () => {
+      mm.revert();
+      setHighlightPart(null);
+    };
+  }, [ScrollTrigger, setActiveSection, setHighlightPart]);
 
   // Keep the scene's highlightPart in lock-step with the click-driven
   // wizard step. This is what drives the per-step camera reframing.
