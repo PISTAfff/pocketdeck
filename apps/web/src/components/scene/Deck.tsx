@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Deck — the procedural fingerboard.
+ * Deck, the procedural fingerboard.
  *
  * Built entirely from three.js primitives (no GLTF). The hierarchy:
  *
@@ -65,7 +65,7 @@ const WHEEL = {
   bearingW: 0.24, // slightly wider than wheel so it pokes
 };
 
-// Explode targets — direction each part flies relative to the assembled deck.
+// Explode targets, direction each part flies relative to the assembled deck.
 const EXPLODE_BOARD = new Vector3(0, 0.35, 0);
 const EXPLODE_TRUCK_FRONT = new Vector3(0.9, -0.4, 0);
 const EXPLODE_TRUCK_BACK = new Vector3(-0.9, -0.4, 0);
@@ -115,13 +115,13 @@ function Truck({ isFront, truckPaint, wheelPaint, exploded }: TruckProps) {
         <PaintedMaterial paint={truckPaint} />
       </mesh>
 
-      {/* Hanger — the angled chunk holding the axle. */}
+      {/* Hanger, the angled chunk holding the axle. */}
       <mesh position={[0, -TRUCK.hangerH / 2, 0]} rotation={[0, 0, 0]}>
         <boxGeometry args={[TRUCK.hangerW, TRUCK.hangerH, TRUCK.hangerD]} />
         <PaintedMaterial paint={truckPaint} />
       </mesh>
 
-      {/* Axle — cylinder lying along Z. */}
+      {/* Axle, cylinder lying along Z. */}
       <mesh
         position={[0, -TRUCK.hangerH, 0]}
         rotation={[Math.PI / 2, 0, 0]}
@@ -176,7 +176,7 @@ function Wheel({ z, y, wheelPaint, exploded, explodeZ }: WheelProps) {
         />
         <PaintedMaterial paint={wheelPaint} />
       </mesh>
-      {/* Bearing inside the wheel — slightly wider so it pokes out both sides. */}
+      {/* Bearing inside the wheel, slightly wider so it pokes out both sides. */}
       <mesh>
         <cylinderGeometry
           args={[WHEEL.bearingR, WHEEL.bearingR, WHEEL.bearingW, 16]}
@@ -216,12 +216,12 @@ export function Deck() {
       MathUtils.lerp(root.scale.x, targetScale, 0.08),
     );
 
-    // Rotation — animate at the inner board group so explode offsets are stable.
+    // Rotation, animate at the inner board group so explode offsets are stable.
     board.rotation.x = MathUtils.lerp(board.rotation.x, kf.rotation[0], 0.07);
     board.rotation.y = MathUtils.lerp(board.rotation.y, kf.rotation[1], 0.07);
     board.rotation.z = MathUtils.lerp(board.rotation.z, kf.rotation[2], 0.07);
 
-    // Idle float (hero only — keeps the deck feeling alive even at scroll 0).
+    // Idle float (hero only, keeps the deck feeling alive even at scroll 0).
     if (state.activeSection === 'hero') {
       const t = performance.now() * 0.001;
       board.position.y = Math.sin(t * 1.2) * 0.06;

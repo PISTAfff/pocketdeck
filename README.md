@@ -2,7 +2,7 @@
 
 A premium, animation-heavy product showcase site for a fictional 96mm
 fingerboard skate. Built as a portfolio piece in the spirit of
-[lusion.co](https://lusion.co) and [oryzo.ai](https://oryzo.ai) — heavy on
+[lusion.co](https://lusion.co) and [oryzo.ai](https://oryzo.ai), heavy on
 scroll-driven 3D, kinetic type, custom cursor work, and a configurator that
 re-textures the live model in real time.
 
@@ -23,12 +23,12 @@ re-textures the live model in real time.
 | State       | **Zustand 5** (scene store + UI store)                      |
 | HTTP client | **Axios 1**                                                 |
 | API         | **Express 5** + **Mongoose 9** + **Joi 18** + **tsx**       |
-| Types       | **TypeScript 5.9** — shared package consumed by both apps   |
+| Types       | **TypeScript 5.9**, shared package consumed by both apps   |
 | Tooling     | **pnpm workspaces**, ESLint 9 (flat), Prettier 3            |
 
 > Notes on majors. `mongoose@9` and `joi@18` are the latest stable. If you
 > need to pin to a previous major on a host that hasn't upgraded yet, change
-> the `apps/api/package.json` entry and run `pnpm install` — both have minimal
+> the `apps/api/package.json` entry and run `pnpm install`, both have minimal
 > public-API changes from `mongoose@8` / `joi@17`.
 
 ---
@@ -40,15 +40,15 @@ re-textures the live model in real time.
 ├── apps
 │   ├── api                 # Express + Mongoose + Joi (tsx for dev & prod)
 │   │   └── src
-│   │       ├── app.ts             # createApp() — middleware + routes
-│   │       ├── index.ts           # entry — connects Mongo + listens
+│   │       ├── app.ts             # createApp(), middleware + routes
+│   │       ├── index.ts           # entry, connects Mongo + listens
 │   │       ├── lib                # env, db, errors
 │   │       ├── middleware         # validate · error · rateLimit
 │   │       ├── models             # Product · Order · Subscriber
 │   │       ├── routes             # health · products · orders · subscribers
 │   │       ├── schemas            # Joi schemas
 │   │       └── seed               # data.ts + run.ts
-│   └── web                 # Next.js 16 — single-page experience
+│   └── web                 # Next.js 16, single-page experience
 │       └── src
 │           ├── app                # layout + page (App Router)
 │           ├── components
@@ -60,8 +60,8 @@ re-textures the live model in real time.
 │           ├── lib                # api.ts (Axios) · scene/keyframes · scene/materials
 │           └── store              # scene.ts (Zustand) · configurator.ts
 ├── packages
-│   └── types               # @pocketdeck/types — shared TS surface
-├── CONTRACT.md             # authoritative HTTP contract — read this first
+│   └── types               # @pocketdeck/types, shared TS surface
+├── CONTRACT.md             # authoritative HTTP contract, read this first
 ├── README.md               # you are here
 └── pnpm-workspace.yaml
 ```
@@ -74,7 +74,7 @@ re-textures the live model in real time.
 
 - **Node** ≥ 20 (the repo was built on Node 24)
 - **pnpm** ≥ 10
-- **MongoDB** ≥ 6 (optional in dev — the API tolerates a missing connection
+- **MongoDB** ≥ 6 (optional in dev, the API tolerates a missing connection
   and still serves `/api/health`; the configurator + order flow need it)
 
 ### Install
@@ -176,14 +176,14 @@ camera + deck pose against that progress. The deck does:
 four variant axes as `<SwatchRow />`s. Each click hits
 `useSceneStore.setDeck/setWheel/setTruck/setGrip(value)`. The deck's
 material props read from the store via Zustand selectors and re-color
-synchronously on the next R3F frame — there's no waiting on an API round-trip
+synchronously on the next R3F frame, there's no waiting on an API round-trip
 to see the change.
 
 Price is computed client-side from `product.basePriceEGP + selectedDeck.priceModifier`,
-and the server recomputes the same total when the order POSTs — the request
+and the server recomputes the same total when the order POSTs, the request
 deliberately doesn't carry a `total` field.
 
-### Validation — once on each side, same rules
+### Validation, once on each side, same rules
 
 `@pocketdeck/types` defines `ConfigurationSelection`, `CreateOrderRequest`,
 governorate / variant unions, etc. Both the Joi schema (server) and the
@@ -195,7 +195,7 @@ When the server rejects with `422`, `errors[].field` uses dot notation
 
 `apps/web/src/components/ui/Preloader.tsx` subscribes to Drei's `useProgress`
 so any future glTF or texture work shows real progress. Today the scene is
-procedural so progress is effectively instant — we enforce a minimum
+procedural so progress is effectively instant, we enforce a minimum
 **1.2s display window** so the brand mark has a moment to land, then fade.
 
 ---
@@ -208,7 +208,7 @@ procedural so progress is effectively instant — we enforce a minimum
 - `transpilePackages: ['three']` keeps the three.js ESM imports tree-shakable.
 - Fonts: Inter + JetBrains Mono via `next/font/google` (self-hosted by Next,
   `display: swap`, zero layout shift, preloaded by Next).
-- Single static route — Turbopack pre-renders at build time.
+- Single static route, Turbopack pre-renders at build time.
 - No images today; if you add them later, prefer Next's `<Image />` with the
   optimizer (sharp is already in the dep tree).
 
@@ -231,7 +231,7 @@ pnpm dev
 
 - Drop real fingerboard trick clips into `apps/web/public/tricks/*.mp4` and
   the `<TrickTile />` will pick them up.
-- The deck's graphic textures are hex-only — wire a real graphic by
+- The deck's graphic textures are hex-only, wire a real graphic by
   replacing the `accent` color in `lib/scene/materials.ts` with a texture
   loaded via `useTexture` and assigning it as the deck's `map`.
 - `<PageTransition />` is exported but unmounted (single route). When a

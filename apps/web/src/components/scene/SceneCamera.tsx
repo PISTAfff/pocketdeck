@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * SceneCamera — drives the active camera based on the current section and the
+ * SceneCamera, drives the active camera based on the current section and the
  * global scroll progress. Damps position / look-at / FOV toward the per-section
  * keyframe each frame so transitions feel cinematic instead of snappy.
  */
@@ -12,7 +12,7 @@ import { Vector3, MathUtils, type PerspectiveCamera as ThreePerspectiveCamera } 
 import { useSceneStore } from '@/store/scene';
 import { getCameraKeyframe } from '@/lib/scene/keyframes';
 
-// Pre-allocated working vectors — created once, reused every frame.
+// Pre-allocated working vectors, created once, reused every frame.
 const targetPos = new Vector3();
 const targetLookAt = new Vector3();
 const currentLookAt = new Vector3();

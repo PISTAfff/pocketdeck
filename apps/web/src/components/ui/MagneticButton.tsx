@@ -1,32 +1,36 @@
 'use client';
 
 /**
- * MagneticButton — wraps a child in a motion.div that springs toward the
+ * MagneticButton, wraps a child in a motion.div that springs toward the
  * pointer. Marks itself with `data-cursor="link"` so the custom cursor reacts.
  */
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type {
+  ComponentPropsWithoutRef,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+} from 'react';
 import { useMagnetic } from '@/hooks/useMagnetic';
 
 type MotionDivProps = ComponentPropsWithoutRef<typeof motion.div>;
 
 interface MagneticButtonProps
-  extends Omit<MotionDivProps, 'children' | 'ref' | 'style'> {
+  extends Omit<MotionDivProps, 'children' | 'ref' | 'style' | 'onClick'> {
   children: ReactNode;
   /** Optional href: renders an `<a>` inside the magnet. */
   href?: string;
-  /** Optional click handler. */
-  onClick?: () => void;
-  /** Button `type` — defaults to `button` (no implicit form submit). */
+  /** Optional click handler. Receives the synthetic mouse event. */
+  onClick?: (e: ReactMouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
+  /** Button `type`, defaults to `button` (no implicit form submit). */
   type?: 'button' | 'submit' | 'reset';
   /** Disable the inner button. */
   disabled?: boolean;
   /** Extra classes on the inner button/anchor. */
   innerClassName?: string;
-  /** Pull radius — defaults to 80px. */
+  /** Pull radius, defaults to 80px. */
   radius?: number;
-  /** Pull strength 0..1 — defaults to 0.45. */
+  /** Pull strength 0..1, defaults to 0.45. */
   strength?: number;
 }
 

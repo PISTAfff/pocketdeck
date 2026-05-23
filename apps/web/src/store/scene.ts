@@ -1,5 +1,5 @@
 /**
- * Scene store — global state for the persistent R3F scene.
+ * Scene store, global state for the persistent R3F scene.
  *
  * Phase 2B owns this file. The shape is part of the cross-agent contract:
  * Phase 2C drives this store from page sections and the configurator UI.
@@ -56,9 +56,13 @@ export interface SceneState {
   scrollProgress: number;
   setScrollProgress: (p: number) => void;
 
-  /** True briefly during page transitions — lets the scene react (e.g. chromatic aberration). */
+  /** True briefly during page transitions, lets the scene react (e.g. chromatic aberration). */
   transitioning: boolean;
   setTransitioning: (v: boolean) => void;
+
+  /** Persistent canvas wrapper opacity 0..1, set by the scroll handler. */
+  sceneOpacity: number;
+  setSceneOpacity: (v: number) => void;
 }
 
 const DEFAULT_SELECTION: ConfigurationSelection = {
@@ -87,4 +91,7 @@ export const useSceneStore = create<SceneState>((set) => ({
 
   transitioning: false,
   setTransitioning: (v) => set({ transitioning: v }),
+
+  sceneOpacity: 1,
+  setSceneOpacity: (v) => set({ sceneOpacity: v }),
 }));

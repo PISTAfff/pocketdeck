@@ -4,12 +4,12 @@
  * The scroll controller smoothly damps the live camera/deck transforms toward
  * these targets each frame. Sections are arranged top-to-bottom of the page:
  *
- *   hero       — deck floats centered, slight tilt, camera mid-distance
- *   manifesto  — deck angled, camera pushed back, drifts during scroll
- *   anatomy    — camera elevated, deck flat, parts ready to explode
- *   configurator — camera close, deck on a turntable axis
- *   tricks     — camera tracks while deck flips
- *   order      — deck settles flat, camera at hero distance for closing shot
+ *   hero,         deck centered above the headline anchor (text sits below)
+ *   manifesto,    deck pushed to the right so the pinned copy occupies the left
+ *   anatomy,      deck swung to the right of the parts list
+ *   configurator, deck on a turntable axis to the right of the swatch panel
+ *   tricks,       deck out of frame; section runs on its own video grid
+ *   order,        canvas faded, form renders against an opaque backdrop
  *
  * Numbers tuned for a procedural deck of dimensions roughly:
  *   deck:   width 1.6, length 5.4, thickness 0.12
@@ -18,11 +18,8 @@
 import type { SectionId } from '@/store/scene';
 
 export interface CameraKeyframe {
-  /** Camera world position. */
   position: [number, number, number];
-  /** Look-at target (almost always origin or just above it). */
   target: [number, number, number];
-  /** Camera field of view in degrees. */
   fov: number;
 }
 
@@ -32,25 +29,40 @@ export interface DeckKeyframe {
   scale: number;
 }
 
+/**
+ * Per-section opacity for the persistent WebGL canvas.
+ * The deck stays mounted (good for perf, never re-instantiates) but fades to
+ * zero in sections that have no business showing 3D, so heavy copy / forms /
+ * the footer can dominate without backdrops hiding the canvas.
+ */
+const SCENE_OPACITY: Record<SectionId, number> = {
+  hero: 1,
+  manifesto: 1,
+  anatomy: 1,
+  configurator: 1,
+  tricks: 0,
+  order: 0,
+};
+
 const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
   hero: {
-    position: [0, 1.4, 7.2],
-    target: [0, 0, 0],
+    position: [0, 1.2, 7.2],
+    target: [0, 0.2, 0],
     fov: 32,
   },
   manifesto: {
-    position: [3.6, 1.0, 8.5],
-    target: [0, 0, 0],
+    position: [-1.6, 0.8, 8.2],
+    target: [1.4, 0, 0],
     fov: 34,
   },
   anatomy: {
-    position: [0, 4.2, 6.4],
-    target: [0, 0, 0],
+    position: [-1.0, 3.6, 6.4],
+    target: [1.4, 0, 0],
     fov: 30,
   },
   configurator: {
-    position: [0, 1.0, 5.0],
-    target: [0, 0, 0],
+    position: [-1.2, 0.8, 5.4],
+    target: [1.2, 0, 0],
     fov: 28,
   },
   tricks: {
@@ -72,17 +84,18 @@ const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
     scale: 1.0,
   },
   manifesto: {
-    position: [-0.4, 0.0, 0],
+    // Pushed right so the pinned copy on the left half is uninterrupted.
+    position: [1.4, 0.0, 0],
     rotation: [-0.05, 0.95, 0.18],
     scale: 1.0,
   },
   anatomy: {
-    position: [0, 0, 0],
+    position: [1.4, 0, 0],
     rotation: [-Math.PI / 2 + 0.18, 0, 0],
     scale: 1.05,
   },
   configurator: {
-    position: [0, 0, 0],
+    position: [1.2, 0, 0],
     rotation: [-0.25, 0, 0],
     scale: 1.1,
   },
@@ -102,6 +115,10 @@ export function getCameraKeyframe(section: SectionId): CameraKeyframe {
   return CAMERA_KEYFRAMES[section];
 }
 
+export function getSceneOpacity(section: SectionId): number {
+  return SCENE_OPACITY[section];
+}
+
 export function getDeckKeyframe(
   section: SectionId,
   scrollProgress: number,
@@ -116,17 +133,14 @@ export function getDeckKeyframe(
 
   switch (section) {
     case 'hero': {
-      // Slow idle spin.
       rotY += scrollProgress * 0.6;
       break;
     }
     case 'manifesto': {
-      // Two barrel rolls across the manifesto section.
       rotY += scrollProgress * Math.PI * 2;
       break;
     }
     case 'tricks': {
-      // Combine a kickflip (X) with a half shuvit (Y) loop.
       rotX -= scrollProgress * Math.PI * 2;
       rotY += scrollProgress * Math.PI;
       break;

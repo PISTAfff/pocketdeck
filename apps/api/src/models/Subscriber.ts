@@ -2,7 +2,7 @@
  * Mongoose schema for the Subscriber document.
  *
  * Mirrors the `Subscriber` interface from `@pocketdeck/types`. Email is a
- * unique index — duplicate signup attempts return the existing record.
+ * unique index, duplicate signup attempts return the existing record.
  */
 import { Schema, model, type HydratedDocument } from 'mongoose';
 import type { Subscriber as SubscriberT } from '@pocketdeck/types';

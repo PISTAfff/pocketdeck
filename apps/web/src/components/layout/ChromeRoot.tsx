@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ChromeRoot — persistent UI chrome that wraps every page.
+ * ChromeRoot, persistent UI chrome that wraps every page.
  *
  * - Sets up Lenis smooth scroll and forwards scroll progress to the scene store.
  * - Renders the custom cursor.

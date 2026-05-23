@@ -57,7 +57,7 @@ body {
   color: var(--color-ink-950);
 }
 
-/* Smooth scroll is handled by Lenis — disable the native version so the
+/* Smooth scroll is handled by Lenis, disable the native version so the
    two don't fight. */
 html.lenis,
 html.lenis body {

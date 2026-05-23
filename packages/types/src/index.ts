@@ -2,7 +2,7 @@
  * @pocketdeck/types
  *
  * Shared types between the Next.js web app and the Express API.
- * The shape of the wire contract — kept in sync with /CONTRACT.md.
+ * The shape of the wire contract, kept in sync with /CONTRACT.md.
  *
  * Frontend imports these via `@pocketdeck/types`. Backend uses them as the
  * source of truth for Mongoose models and Joi schemas.

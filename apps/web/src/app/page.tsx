@@ -1,5 +1,5 @@
 /**
- * Home — the single PocketDeck experience.
+ * Home, the single PocketDeck experience.
  *
  * Sections are assembled here in order. ChromeRoot (in layout.tsx) renders the
  * Nav at the top and the Footer below children. The persistent WebGL scene

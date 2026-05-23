@@ -1,27 +1,28 @@
 'use client';
 
 /**
- * SceneRoot — the persistent fixed-position R3F canvas.
+ * SceneRoot, the persistent fixed-position R3F canvas.
  *
  * Mounted once by app/layout.tsx. Survives route changes because it lives at
- * the root layout level — Next.js never unmounts the layout while navigating
- * within the same segment.
+ * the root layout level. The canvas itself stays mounted even when its
+ * opacity is zero, so the GL context is never thrown away.
  *
- * The Canvas is gated behind an `isMounted` flag so it never renders during
- * SSR (WebGL contexts can't be created on the server). On the first client
- * pass `isMounted` flips to true and the <Canvas> takes over.
+ * The wrapper opacity is driven by `useSceneStore.sceneOpacity`, which the
+ * useLenis scroll handler interpolates between 1 (top half of the page) and
+ * 0 (Tricks / Order / Footer). That gives us a clean visual cutoff between
+ * the 3D half of the experience and the form half, without unmounting WebGL.
  *
- * Phase 2C's <ChromeRoot> renders DOM content over the top of this canvas via
- * the `.scene-root` (this canvas) / `.page-root` (DOM) z-index stack defined
- * in globals.css.
+ * The canvas background is also transparent (alpha = true, no <color attach="background">)
+ * so the body's dark ink color shows through when the canvas fades, which
+ * means no flash of black during the cross-fade.
  *
  * Performance contract:
  *   - dpr capped at [1, 1.5]
- *   - antialias on (good silhouettes for a small product shot)
- *   - frameloop = 'always' — Lenis-driven scroll and idle floats both need it
- *     and the procedural scene is light enough to afford it
+ *   - antialias on
+ *   - frameloop = 'always' while visible; switches to 'never' when faded
+ *     out so we don't burn frames on an invisible scene
  *   - powerPreference = 'high-performance'
- *   - pointer-events: none on the wrapper so the DOM keeps cursor events
+ *   - pointer-events: none on the wrapper so DOM keeps cursor events
  */
 import { useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
@@ -29,22 +30,32 @@ import { Lighting } from './Lighting';
 import { Effects } from './Effects';
 import { SceneCamera } from './SceneCamera';
 import { Deck } from './Deck';
+import { useSceneStore } from '@/store/scene';
 
 export function SceneRoot() {
   const [isMounted, setIsMounted] = useState(false);
+  const sceneOpacity = useSceneStore((s) => s.sceneOpacity);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   if (!isMounted) {
-    // SSR / first paint: render the wrapper only. Layout below stays stable
-    // and the Canvas mounts on the next client tick.
     return <div className="scene-root" aria-hidden />;
   }
 
+  // Avoid wasting frames when fully transparent.
+  const frameloop = sceneOpacity <= 0.01 ? 'never' : 'always';
+
   return (
-    <div className="scene-root" aria-hidden>
+    <div
+      className="scene-root"
+      aria-hidden
+      style={{
+        opacity: sceneOpacity,
+        transition: 'opacity 360ms cubic-bezier(0.65, 0, 0.35, 1)',
+      }}
+    >
       <Canvas
         dpr={[1, 1.5]}
         gl={{
@@ -52,7 +63,7 @@ export function SceneRoot() {
           alpha: true,
           powerPreference: 'high-performance',
         }}
-        frameloop="always"
+        frameloop={frameloop}
         style={{
           position: 'absolute',
           inset: 0,
@@ -62,7 +73,6 @@ export function SceneRoot() {
         }}
         camera={{ position: [0, 1.4, 7.2], fov: 32, near: 0.1, far: 100 }}
       >
-        <color attach="background" args={['#07070a']} />
         <fog attach="fog" args={['#07070a', 9, 22]} />
         <Suspense fallback={null}>
           <SceneCamera />

@@ -1,5 +1,5 @@
 /**
- * Configurator store — UI-only state.
+ * Configurator store, UI-only state.
  *
  * The current selection lives in `useSceneStore` (owned by Agent B). This store
  * holds the fetched product document and any form-submission state for the

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * PageTransition — full-bleed curtain wipe used between route transitions.
+ * PageTransition, full-bleed curtain wipe used between route transitions.
  *
  * The persistent WebGL canvas must keep rendering during the transition; we
  * fade a near-black curtain over the DOM and canvas, then back out once the

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Internal helpers for OrderSection — status line + error normalizer. Kept
+ * Internal helpers for OrderSection, status line + error normalizer. Kept
  * here so the main section file stays under the 250-line cap.
  */
 import type { Order } from '@pocketdeck/types';
@@ -34,7 +34,7 @@ export function handleSubmitError(
         err.code === 'OUT_OF_STOCK'
           ? 'That mix just sold out. Try a different combination.'
           : err.code === 'RATE_LIMITED'
-            ? 'Too many requests — give it a minute.'
+            ? 'Too many requests, give it a minute.'
             : err.message,
     });
     return;
@@ -50,7 +50,7 @@ export function FormStatusLine({ status }: { status: OrderStatus }) {
   if (status.kind === 'success') {
     return (
       <p role="status" className="font-mono text-xs text-ember-400">
-        Order #{status.order.id.slice(-6)} confirmed — we&apos;ll call to verify.
+        Order #{status.order.id.slice(-6)} confirmed, we&apos;ll call to verify.
       </p>
     );
   }

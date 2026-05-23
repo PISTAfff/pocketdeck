@@ -1,5 +1,5 @@
 /**
- * Egyptian governorate list — mirrors the `Governorate` union in
+ * Egyptian governorate list, mirrors the `Governorate` union in
  * @pocketdeck/types. Listed here as a runtime value because string-literal
  * unions have no runtime presence. The `satisfies` clause guarantees this
  * stays in sync with the type at compile time.

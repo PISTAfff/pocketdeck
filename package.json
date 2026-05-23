@@ -2,7 +2,7 @@
   "name": "pocketdeck",
   "version": "0.1.0",
   "private": true,
-  "description": "PocketDeck — premium 3D product showcase for a fingerboard skate",
+  "description": "PocketDeck, premium 3D product showcase for a fingerboard skate",
   "scripts": {
     "dev": "pnpm -r --parallel --stream run dev",
     "dev:web": "pnpm --filter @pocketdeck/web dev",

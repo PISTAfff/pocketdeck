@@ -2,7 +2,7 @@
  * Joi validation for `CreateOrderRequest`.
  *
  * Every rule mirrors CONTRACT.md's validation table exactly. Joi messages
- * are concise — they surface verbatim in the `errors[].message` field.
+ * are concise, they surface verbatim in the `errors[].message` field.
  */
 import Joi from 'joi';
 import type {

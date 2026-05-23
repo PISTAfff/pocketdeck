@@ -20,7 +20,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PocketDeck — fingerboard in your pocket',
+  title: 'PocketDeck, fingerboard in your pocket',
   description:
     'A 96mm fingerboard skate built for the desk. Configure your deck, wheels, trucks and grip.',
   metadataBase: new URL('http://localhost:3000'),

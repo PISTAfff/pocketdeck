@@ -1,8 +1,8 @@
-# PocketDeck — API Contract
+# PocketDeck, API Contract
 
 Authoritative wire contract between `@pocketdeck/web` (Next.js client) and
 `@pocketdeck/api` (Express server). The TypeScript surface lives in
-`packages/types` and MUST be imported by both sides — do not duplicate the
+`packages/types` and MUST be imported by both sides, do not duplicate the
 shapes. If a downstream change is required, **edit this file and the types
 package together**, then notify the integration agent.
 
@@ -13,7 +13,7 @@ Dates are ISO-8601 strings.
 
 ## Base
 
-- Dev base URL (browser): `/api` — proxied by Next.js to `http://localhost:4000`.
+- Dev base URL (browser): `/api`, proxied by Next.js to `http://localhost:4000`.
 - Direct API base URL: `http://localhost:4000`.
 - CORS is locked to the web app origin (`http://localhost:3000` in dev,
   `WEB_ORIGIN` in production).
@@ -52,7 +52,7 @@ Every error response (non-2xx):
 | 400  | Malformed request (bad JSON, wrong content type)                  |
 | 404  | Resource not found                                                |
 | 409  | Conflict (e.g. out of stock)                                      |
-| 422  | Validation error — body failed Joi check, `errors[]` is present   |
+| 422  | Validation error, body failed Joi check, `errors[]` is present   |
 | 429  | Rate-limited (POST routes only)                                   |
 | 500  | Unhandled server error                                            |
 
@@ -81,7 +81,7 @@ stock counts).
 
 Creates a new order and decrements stock for the matching SKU. Rate-limited.
 
-Body — `CreateOrderRequest`:
+Body, `CreateOrderRequest`:
 
 ```ts
 {
@@ -112,10 +112,10 @@ Returns the order. 24-character hex Mongo id.
 
 ### `POST /api/subscribers`
 
-Newsletter signup. Idempotent — submitting the same email twice returns
+Newsletter signup. Idempotent, submitting the same email twice returns
 `201` with the existing record.
 
-Body — `CreateSubscriberRequest`:
+Body, `CreateSubscriberRequest`:
 
 ```ts
 { email: "valid email, max 120 chars" }
@@ -157,7 +157,7 @@ Servers MUST trim whitespace and lowercase emails before persisting.
 
 `totalEGP = (basePrice + deckModifier) * quantity`.
 
-The server is authoritative — the client sends only the `selection` and
+The server is authoritative, the client sends only the `selection` and
 `quantity`. The server recomputes the price from the product document.
 Clients displaying a price MUST mirror the same calculation but may not
 send their own total in the request.
@@ -166,7 +166,7 @@ send their own total in the request.
 
 Stock is decremented atomically when an order is created. If the variant
 has `stock <= 0` (or `< quantity`), the server returns `409 OUT_OF_STOCK`.
-There is no reservation/hold — first POST wins.
+There is no reservation/hold, first POST wins.
 
 ## Versioning
 

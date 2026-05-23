@@ -1,5 +1,5 @@
 /**
- * useMagnetic — math + listeners for the magnetic-button effect.
+ * useMagnetic, math + listeners for the magnetic-button effect.
  *
  * Returns a ref to attach to the outer wrapper plus the translated x/y values
  * as MotionValues so the consumer can drive a motion.div without re-rendering.
@@ -12,7 +12,7 @@ import { useMotionValue, useSpring, type MotionValue } from 'framer-motion';
 interface MagneticConfig {
   /** Radius (px) within which the magnet activates. */
   radius?: number;
-  /** Pull strength — fraction of the offset to apply. 0..1. */
+  /** Pull strength, fraction of the offset to apply. 0..1. */
   strength?: number;
 }
 

@@ -2,7 +2,7 @@
  * POST /api/subscribers
  *
  * Idempotent newsletter signup. Returns 201 even if the email is already
- * subscribed — the existing record is returned in that case.
+ * subscribed, the existing record is returned in that case.
  */
 import { Router } from 'express';
 import type {

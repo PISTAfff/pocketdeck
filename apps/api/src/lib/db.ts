@@ -10,7 +10,7 @@ import mongoose from 'mongoose';
 import { env } from './env.js';
 
 // Fail queries immediately when not connected instead of hanging on the
-// 10s buffer — this lets the API serve a clean 404 in dev when no Mongo
+// 10s buffer, this lets the API serve a clean 404 in dev when no Mongo
 // is running, instead of timing out and returning 500.
 mongoose.set('bufferCommands', false);
 

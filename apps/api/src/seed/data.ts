@@ -137,7 +137,7 @@ function buildVariants(): Variant[] {
   return variants;
 }
 
-// Sanity-check the catalog size at module load — fails loudly if a new
+// Sanity-check the catalog size at module load, fails loudly if a new
 // option is added without revisiting the seed.
 const expectedVariantCount =
   deckOptions.length *
@@ -156,7 +156,7 @@ export const productSeed: Omit<ProductT, 'createdAt' | 'updatedAt'> = {
   name: 'PocketDeck',
   tagline: 'A fingerboard that punches above its size.',
   description:
-    'The PocketDeck is a premium maple fingerboard built for tricks at your desk. Configure the graphic, wheels, trucks, and grip — every combination ships in protective foam.',
+    'The PocketDeck is a premium maple fingerboard built for tricks at your desk. Configure the graphic, wheels, trucks, and grip, every combination ships in protective foam.',
   basePriceEGP: BASE_PRICE_EGP,
   options: {
     deck: deckOptions,

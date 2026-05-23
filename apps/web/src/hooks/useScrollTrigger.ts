@@ -1,5 +1,5 @@
 /**
- * useScrollTrigger — registers `gsap.registerPlugin(ScrollTrigger)` exactly once
+ * useScrollTrigger, registers `gsap.registerPlugin(ScrollTrigger)` exactly once
  * for the client and re-exports a stable handle.
  */
 'use client';

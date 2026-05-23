@@ -38,7 +38,7 @@ export class ApiValidationError extends Error {
   }
 }
 
-/** Anything else the server told us — used for 4xx/5xx that aren't 422. */
+/** Anything else the server told us, used for 4xx/5xx that aren't 422. */
 export class ApiError extends Error {
   readonly code: string;
   readonly status: number;

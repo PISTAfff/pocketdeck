@@ -1,7 +1,7 @@
 /**
  * GET /api/health
  *
- * Returns the documented health envelope. Always 200 — used by orchestrators
+ * Returns the documented health envelope. Always 200, used by orchestrators
  * to confirm the API process is alive.
  */
 import { Router } from 'express';

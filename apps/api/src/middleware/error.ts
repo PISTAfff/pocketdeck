@@ -22,7 +22,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
-  // Anything else — log to stderr (allowed by lint config) and respond 500.
+  // Anything else, log to stderr (allowed by lint config) and respond 500.
   console.error('[api] unhandled error:', err);
   const fallback = ApiError.internal();
   res.status(fallback.status).json(asEnvelope(fallback));

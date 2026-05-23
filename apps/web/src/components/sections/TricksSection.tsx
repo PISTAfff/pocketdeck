@@ -1,9 +1,12 @@
 'use client';
 
 /**
- * Tricks — grid of looping video tiles. Hovering a tile scrubs its
- * `currentTime` based on horizontal pointer position. Poster images stand in
- * for real trick clips — no real video files are committed at this stage.
+ * Tricks, grid of looping video tiles. Hovering a tile scrubs its
+ * `currentTime` based on horizontal pointer position. Tile heights are fixed
+ * by an aspect ratio so the 3-column grid stays perfectly aligned.
+ *
+ * Sits over an opaque section background so the canvas (which has faded out
+ * by this scroll position anyway) never interferes with the grid.
  */
 import { useEffect, useRef } from 'react';
 import { useSceneStore } from '@/store/scene';
@@ -13,7 +16,7 @@ const TRICKS = [
   { id: 'ollie', name: 'Ollie', description: 'The fundamental pop.' },
   { id: 'kickflip', name: 'Kickflip', description: 'Pop, flick, catch.' },
   { id: 'heelflip', name: 'Heelflip', description: 'Pop, flick the heel.' },
-  { id: 'shuvit', name: 'Pop-Shuvit', description: '180° board rotation.' },
+  { id: 'shuvit', name: 'Pop-Shuvit', description: '180-degree board rotation.' },
   { id: 'manual', name: 'Manual', description: 'Balance on two wheels.' },
   { id: 'grind', name: '50-50 Grind', description: 'Both trucks, lock in.' },
 ] as const;
@@ -44,24 +47,31 @@ export function TricksSection() {
     <section
       ref={sectionRef}
       id="tricks"
-      className="relative px-6 py-40 md:px-12"
+      className="relative bg-ink-950 px-6 py-28 sm:px-10 md:px-14 md:py-36"
     >
-      <div className="mx-auto max-w-7xl">
-        <header className="mx-auto flex max-w-3xl flex-col items-center text-center">
+      <div className="mx-auto max-w-[1400px]">
+        <header className="flex flex-col items-start gap-4 md:items-center md:text-center">
           <p className="font-mono text-xs tracking-[0.4em] text-bone-300 uppercase">
             04 / tricks
           </p>
-          <h2 className="mt-6 font-display text-[clamp(2.25rem,5.5vw,4.5rem)] leading-[0.95] tracking-[-0.02em] text-bone-50">
+          <h2
+            className="font-display font-semibold leading-[0.95] tracking-[-0.02em] text-bone-50"
+            style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}
+          >
             What it can do.
           </h2>
-          <p className="mt-6 max-w-xl font-sans text-base text-bone-200">
-            Hover any tile and drag across to scrub the clip frame-by-frame.
+          <p className="max-w-xl font-sans text-base leading-relaxed text-bone-200">
+            Hover any tile and drag horizontally to scrub the clip
+            frame-by-frame. Drag right to fast-forward, left to rewind.
           </p>
         </header>
 
-        <div className="mt-20 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
-          {TRICKS.map((trick, i) => (
-            <TrickTile key={trick.id} {...trick} accent={i % 3 === 1} />
+        <div
+          className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:mt-20"
+          style={{ gridAutoRows: '1fr' }}
+        >
+          {TRICKS.map((trick) => (
+            <TrickTile key={trick.id} {...trick} />
           ))}
         </div>
       </div>

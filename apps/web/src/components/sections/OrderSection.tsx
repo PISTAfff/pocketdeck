@@ -1,9 +1,13 @@
 'use client';
 
 /**
- * Order — checkout form. Submits via Axios to POST /api/orders with the
- * current selection (from the scene store). Maps 422 `errors[].field` (dot
- * paths like "customer.phone") to per-input errors.
+ * Order, the checkout form. Sits on a fully opaque ink-950 background so
+ * the WebGL scene (faded by this scroll position) never bleeds onto the
+ * inputs.
+ *
+ * Submits via Axios to POST /api/orders with the current selection (from the
+ * scene store). Maps 422 errors[].field (dot path like "customer.phone") onto
+ * the corresponding inline error display.
  */
 import { useEffect, useRef, useState } from 'react';
 import type { CreateOrderRequest, Governorate } from '@pocketdeck/types';
@@ -109,9 +113,9 @@ export function OrderSection() {
     <section
       ref={sectionRef}
       id="order"
-      className="relative px-6 py-40 md:px-12"
+      className="relative bg-ink-950 px-6 py-28 sm:px-10 md:px-14 md:py-36"
     >
-      <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-[1fr_1.2fr] md:gap-16">
+      <div className="mx-auto grid max-w-[1400px] gap-12 md:grid-cols-[0.85fr_1fr] md:gap-20">
         <aside>
           <OrderSummary
             productSlug={PRODUCT_SLUG}
@@ -132,6 +136,7 @@ export function OrderSection() {
             value={form.name}
             onChange={(v) => onChange('name', v)}
             error={errors['customer.name']}
+            placeholder="Your full name"
             autoComplete="name"
           />
           <Field
@@ -141,6 +146,7 @@ export function OrderSection() {
             onChange={(v) => onChange('phone', v)}
             error={errors['customer.phone']}
             placeholder="01XXXXXXXXX"
+            helper="Egyptian mobile, 11 digits starting with 01."
             inputMode="tel"
             autoComplete="tel"
           />
@@ -150,43 +156,60 @@ export function OrderSection() {
             value={form.address}
             onChange={(v) => onChange('address', v)}
             error={errors['customer.address']}
-            multiline
+            placeholder="Street, building, apartment"
             autoComplete="street-address"
+            multiline
           />
           <div className="flex flex-col gap-2">
             <label
               htmlFor="governorate"
-              className="font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase"
+              className="font-mono text-[11px] font-medium tracking-[0.28em] text-bone-200 uppercase"
             >
               Governorate
             </label>
-            <select
-              id="governorate"
-              value={form.governorate}
-              onChange={(e) => onChange('governorate', e.target.value as Governorate)}
-              data-cursor="link"
-              aria-invalid={Boolean(errors['customer.governorate'])}
-              className={fieldBase}
-            >
-              <option value="" disabled>
-                Select…
-              </option>
-              {GOVERNORATES.map((g) => (
-                <option key={g} value={g} className="bg-ink-900 text-bone-50">
-                  {g}
+            <div className="relative">
+              <select
+                id="governorate"
+                value={form.governorate}
+                onChange={(e) => onChange('governorate', e.target.value as Governorate)}
+                data-cursor="link"
+                aria-invalid={Boolean(errors['customer.governorate'])}
+                className={`${fieldBase} appearance-none pr-12`}
+              >
+                <option value="" disabled className="bg-ink-900 text-bone-300">
+                  Select your governorate
                 </option>
-              ))}
-            </select>
+                {GOVERNORATES.map((g) => (
+                  <option key={g} value={g} className="bg-ink-900 text-bone-50">
+                    {g}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 right-5 -translate-y-1/2 text-bone-300"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M3 5 L7 9 L11 5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </div>
             <FieldError message={errors['customer.governorate']} />
           </div>
 
-          <div className="mt-2 flex flex-col items-start gap-3">
+          <div className="mt-4 flex flex-col items-start gap-4 border-t border-bone-50/10 pt-6">
             <MagneticButton
               type="submit"
               disabled={status.kind === 'submitting'}
-              innerClassName="rounded-full bg-ember-500 px-10 py-5 font-mono text-sm tracking-[0.24em] text-ink-950 uppercase transition-colors hover:bg-ember-400 disabled:opacity-60"
+              innerClassName="rounded-full bg-ember-500 px-10 py-5 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400 disabled:opacity-60"
             >
-              {status.kind === 'submitting' ? 'Placing…' : 'Confirm order'}
+              {status.kind === 'submitting' ? 'Placing order...' : 'Confirm order'}
             </MagneticButton>
             <FormStatusLine status={status} />
           </div>

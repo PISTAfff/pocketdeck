@@ -1,5 +1,5 @@
 /**
- * Seed runner — upserts the PocketDeck product document.
+ * Seed runner, upserts the PocketDeck product document.
  *
  * Connects to Mongo, performs a single upsert keyed on `slug`, logs a
  * one-line summary, then disconnects. Idempotent.

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Preloader — deterministic first-paint reveal.
+ * Preloader, deterministic first-paint reveal.
  *
  * Subscribes to Drei's `useProgress` so we account for any glTF / texture work
  * the scene picks up later. Because today the scene is purely procedural, the

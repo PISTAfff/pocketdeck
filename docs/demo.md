@@ -1,6 +1,6 @@
 # Demo clip
 
-`docs/demo.mp4` in this folder is a placeholder file (0 bytes by intent — the
+`docs/demo.mp4` in this folder is a placeholder file (0 bytes by intent, the
 README references the path so the badge resolves once a real clip is dropped
 in). To record one:
 
@@ -14,10 +14,10 @@ in). To record one:
 
 The capture should hit, in order:
 
-- 00:00–00:03  Hero — headline reveal, deck idle float.
-- 00:03–00:06  Manifesto — barrel rolls behind the pinned copy.
-- 00:06–00:10  Anatomy — exploded view, labels reveal.
-- 00:10–00:14  Configurator — click each swatch row and watch the deck
+- 00:00–00:03  Hero, headline reveal, deck idle float.
+- 00:03–00:06  Manifesto, barrel rolls behind the pinned copy.
+- 00:06–00:10  Anatomy, exploded view, labels reveal.
+- 00:10–00:14  Configurator, click each swatch row and watch the deck
   re-color in real time.
-- 00:14–00:17  Tricks — hover the tiles to scrub the loops.
-- 00:17–00:20  Order — settle on the form with the summary card.
+- 00:14–00:17  Tricks, hover the tiles to scrub the loops.
+- 00:17–00:20  Order, settle on the form with the summary card.

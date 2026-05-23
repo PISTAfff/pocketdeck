@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Lighting — moody three-point setup for the procedural fingerboard.
+ * Lighting, moody three-point setup for the procedural fingerboard.
  *
  * - Ambient base so shadow side never goes black
  * - Warm key light from upper-front-right

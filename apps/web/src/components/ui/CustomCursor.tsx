@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * CustomCursor — a fixed-position bone-colored dot that springs after the pointer.
+ * CustomCursor, a fixed-position bone-colored dot that springs after the pointer.
  * Grows + softens when hovering an element with `[data-cursor="link"]`.
  *
  * Hidden on coarse-pointer devices.

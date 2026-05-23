@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * SplitText — splits children (a string) into per-word or per-char spans and
+ * SplitText, splits children (a string) into per-word or per-char spans and
  * staggers them in with Framer Motion. Triggers in-view via the intersection
  * observer baked into `whileInView`.
  */

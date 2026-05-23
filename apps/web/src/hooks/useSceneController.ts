@@ -1,5 +1,5 @@
 /**
- * useSceneController — stable convenience hook the frontend chrome (Phase 2C)
+ * useSceneController, stable convenience hook the frontend chrome (Phase 2C)
  * uses to drive the persistent scene.
  *
  * The shape returned here is part of the cross-agent contract:
