@@ -241,7 +241,11 @@ function GripAccent({
         {rings.map((scale, i) => (
           <mesh
             key={i}
-            rotation={[Math.PI / 2, 0, 0]}
+            // -PI/2 so the ring's normal points +Y (toward an overhead
+            // camera). +PI/2 was pointing it -Y and the lit side was
+            // hidden underneath, leaving the camera looking at the unlit
+            // back face.
+            rotation={[-Math.PI / 2, 0, 0]}
             scale={[gripLength * scale, gripWidth * scale * 0.55, 1]}
           >
             <ringGeometry args={[0.45, 0.5, 64]} />

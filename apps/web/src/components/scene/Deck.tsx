@@ -188,7 +188,11 @@ function GripPatternAccent({
         {rings.map((scale, i) => (
           <mesh
             key={i}
-            rotation={[Math.PI / 2, 0, 0]}
+            // -PI/2 (not +PI/2): ringGeometry's normal is +Z by default;
+            // rotating -PI/2 around X maps +Z to +Y so the ring faces up
+            // toward the overhead camera. With +PI/2 the ring's normal
+            // flips to -Y (down) and the camera sees the unlit back face.
+            rotation={[-Math.PI / 2, 0, 0]}
             scale={[gripLength * scale, gripWidth * scale * 0.55, 1]}
           >
             <ringGeometry args={[0.45, 0.5, 64]} />

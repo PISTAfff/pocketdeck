@@ -161,12 +161,12 @@ const ANATOMY_CAMERA: Record<DeckPart, CameraKeyframe> = {
     fov: 22,
   },
   grip: {
-    // Near-overhead so the grip face fills the frame and the pattern is
-    // the subject. Tiny Z offset keeps the camera's up vector unambiguous
-    // (a true straight-down shot would be degenerate with up=Y).
-    position: [1.1, 5.0, 0.6],
-    target: [1.1, 0, 0],
-    fov: 26,
+    // Near-overhead. Look-at offset to the left so the deck (at X=1.2)
+    // reads in the right column. Tiny Z offset keeps the up vector
+    // unambiguous (a true straight-down shot is degenerate with up=Y).
+    position: [0.1, 4.6, 0.5],
+    target: [0.1, 0, 0],
+    fov: 28,
   },
 };
 
@@ -198,11 +198,12 @@ const CONFIGURATOR_CAMERA: Record<DeckPart, CameraKeyframe> = {
   },
   grip: {
     // Near-overhead so the grip face fills the frame and the pattern is
-    // the subject. Camera sits almost directly above the deck so the user
-    // sees the stripes / rings / dots on full display.
-    position: [1.5, 5.2, 0.7],
-    target: [1.5, 0, 0],
-    fov: 28,
+    // the subject. Look-at sits LEFT of the deck (X=0.4) so perspective
+    // offsets the deck (at X=1.6) into the right half of the viewport,
+    // away from the wizard card on the left.
+    position: [0.4, 5.0, 0.6],
+    target: [0.4, 0, 0],
+    fov: 30,
   },
 };
 
@@ -226,13 +227,12 @@ const CONFIGURATOR_DECK: Record<DeckPart, DeckKeyframe> = {
     scale: 0.5,
   },
   grip: {
-    // Deck stays completely flat so the grip surface is the only thing
-    // the user sees. Camera is near-overhead (CONFIGURATOR_CAMERA.grip
-    // sits straight above with a tiny Z offset), so the pattern fills
-    // the frame.
-    position: [1.5, 0, 0],
+    // Deck stays flat (grip face up toward the overhead camera). Pushed
+    // further right so the model offsets visibly to the right column
+    // and doesn't lap over the wizard card.
+    position: [1.6, 0, 0],
     rotation: [0, 0, 0],
-    scale: 0.45,
+    scale: 0.42,
   },
 };
 
@@ -258,8 +258,9 @@ const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
     scale: 0.42,
   },
   grip: {
-    // Flat deck so the grip face is the entire subject of the frame.
-    position: [1.1, 0, 0],
+    // Flat deck pushed further right so the grip surface lands in the
+    // anatomy right column, away from the parts copy on the left.
+    position: [1.2, 0, 0],
     rotation: [0, 0, 0],
     scale: 0.4,
   },
