@@ -90,7 +90,7 @@ export function HeroSection() {
                 by="word"
                 stagger={0.08}
                 delay={0.45}
-                itemClassName="text-ember-500"
+                itemClassName="spray-text text-ember-500"
               >
                 in your pocket.
               </SplitText>

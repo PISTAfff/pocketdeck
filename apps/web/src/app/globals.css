@@ -354,6 +354,41 @@ html.lenis body {
   clip-path: inset(0 0 0 0);
 }
 
+/**
+ * Spray-paint edge (#54). Stacks two text-shadow layers (a tight ember
+ * halo and a wider soft mist) on top of an SVG displacement filter to
+ * jitter the glyph outlines. Applied to the ember accent words in the
+ * headlines ("RIDE.", "POCKET.", "STEP BY STEP.", "DO.").
+ */
+@utility spray-text {
+  filter: url(#spray-edge);
+  text-shadow:
+    0 0 0.5px rgba(255, 91, 20, 0.55),
+    0 0 6px rgba(255, 91, 20, 0.18),
+    0 0 14px rgba(255, 91, 20, 0.1);
+}
+
+/**
+ * Brush-stroke underline (#52). Reusable SVG-mask underline that reads as
+ * a hand-pulled brush rather than a flat rectangle. Apply as an absolutely-
+ * positioned span underneath the active nav link.
+ */
+@utility brush-underline {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  height: 6px;
+  width: 24px;
+  transform: translateX(-50%);
+  background: var(--color-ember-500);
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 16'><path d='M2 9 C 8 4 16 12 24 8 S 40 4 52 9 L 58 7 L 56 14 L 6 13 Z' fill='%23000'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 16'><path d='M2 9 C 8 4 16 12 24 8 S 40 4 52 9 L 58 7 L 56 14 L 6 13 Z' fill='%23000'/></svg>");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
 /* --- Reduced motion (#59) -------------------------------------------------
    Disables grain drift and any *animation that exceeds 0.4s. ScrollTrigger
    pins / R3F animations are disabled at the component level by reading

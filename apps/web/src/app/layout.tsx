@@ -82,6 +82,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#hero" className="skip-link">
           Skip to content
         </a>
+
+        {/* Global SVG filters used by the spray-paint accent text (#54) and
+            the brush-stroke nav underline (#52). Defined once at the body
+            level so any element can reference them via filter: url(#id). */}
+        <svg
+          aria-hidden
+          width="0"
+          height="0"
+          style={{ position: 'absolute', left: '-9999px' }}
+        >
+          <defs>
+            {/* Spray-paint edge: turbulence offset adds a soft jittered
+                outline to whatever text sits inside the filter region. */}
+            <filter id="spray-edge" x="-10%" y="-15%" width="120%" height="130%">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.95"
+                numOctaves="2"
+                seed="7"
+                result="noise"
+              />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2" />
+            </filter>
+          </defs>
+        </svg>
+
         <Preloader />
         <SceneRoot />
         <ChromeRoot>{children}</ChromeRoot>

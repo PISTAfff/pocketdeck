@@ -206,7 +206,7 @@ export function AnatomySection() {
             >
               Five parts.
               <br />
-              <span className="text-ember-500">One pocket.</span>
+              <span className="spray-text text-ember-500">One pocket.</span>
             </h2>
           </div>
           <div className="text-right">
@@ -329,7 +329,7 @@ export function AnatomySection() {
           >
             Five parts.
             <br />
-            <span className="text-ember-500">One pocket.</span>
+            <span className="spray-text text-ember-500">One pocket.</span>
           </h2>
         </div>
         {PARTS.map((p) => (

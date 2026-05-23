@@ -52,7 +52,8 @@ export function TricksSection() {
     <section
       ref={sectionRef}
       id="tricks"
-      className="relative bg-ink-950 px-6 py-28 sm:px-10 md:px-14 md:py-36"
+      // #32: top padding halved so the heading sits closer to the grid.
+      className="relative bg-ink-950 px-6 pt-16 pb-24 sm:px-10 md:px-14 md:pt-20 md:pb-24"
     >
       <div className="mx-auto max-w-[1400px]">
         <header className="flex flex-col items-start gap-4">
@@ -61,7 +62,7 @@ export function TricksSection() {
             className="display-headline text-bone-50"
             style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5.5rem)' }}
           >
-            What it can <span className="text-ember-500">do</span>.
+            What it can <span className="spray-text text-ember-500">do</span>.
           </h2>
           <p className="max-w-xl font-sans text-base leading-relaxed text-bone-100">
             Hover any tile and drag horizontally to scrub the clip
@@ -70,7 +71,7 @@ export function TricksSection() {
         </header>
 
         <div
-          className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:mt-20"
+          className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:mt-12"
           style={{ gridAutoRows: '1fr' }}
         >
           {TRICKS.map((trick, i) => (

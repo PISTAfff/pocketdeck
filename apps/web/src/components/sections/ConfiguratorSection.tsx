@@ -268,14 +268,14 @@ export function ConfiguratorSection() {
               >
                 Build yours,
                 <br />
-                <span className="text-ember-500">step by step.</span>
+                <span className="spray-text text-ember-500">step by step.</span>
               </h2>
               <p className="mt-5 max-w-md font-sans text-base leading-relaxed text-bone-100">
                 Scroll to move through the four axes. The deck on the right
                 relights the active part on every step.
               </p>
             </div>
-            <StepRail step={step} />
+            <StepRail step={step} onJump={(target) => scrollToStep(target)} />
           </header>
 
           {/* Two-column body: wizard card on the LEFT, deck reserved area on the RIGHT */}
@@ -369,7 +369,7 @@ export function ConfiguratorSection() {
         >
           Build yours,
           <br />
-          <span className="text-ember-500">step by step.</span>
+          <span className="spray-text text-ember-500">step by step.</span>
         </h2>
         <StepRail step={step} />
         {step < 4 ? (
@@ -431,38 +431,112 @@ export function ConfiguratorSection() {
 // ---------------------------------------------------------------------------
 // Wizard subcomponents
 
-function StepRail({ step }: { step: WizardStep }) {
+interface StepRailProps {
+  step: WizardStep;
+  onJump?: (step: WizardStep) => void;
+}
+
+function StepRail({ step, onJump }: StepRailProps) {
   // The four variant axes are numbered 1..4; Review sits as a non-numbered
   // final stage per the spec clarification on #25.
   const label =
     step < 4
       ? `Step ${String(step + 1).padStart(2, '0')} / 04 · ${STEPS[step]!.axis}`
       : 'Review · build complete';
+
+  const onKey = (e: React.KeyboardEvent, i: number) => {
+    if (!onJump) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      onJump(Math.min(4, i + 1) as WizardStep);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      onJump(Math.max(0, i - 1) as WizardStep);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      onJump(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      onJump(4);
+    }
+  };
+
   return (
     <div className="flex flex-col items-start gap-3 md:items-end">
       <p className="font-mono text-[11px] tracking-[0.32em] text-bone-200 uppercase">
         {label}
       </p>
-      <div className="flex items-center gap-1.5" aria-hidden>
-        {[0, 1, 2, 3].map((i) => (
+      <div
+        role={onJump ? 'tablist' : undefined}
+        aria-label={onJump ? 'Configure steps' : undefined}
+        className="flex items-center gap-1.5"
+      >
+        {[0, 1, 2, 3].map((i) => {
+          const state: 'done' | 'current' | 'idle' =
+            i < step ? 'done' : i === step ? 'current' : 'idle';
+          const bar = (
+            <span
+              aria-hidden
+              className={clsx(
+                'block h-1 w-10 rounded-full transition-colors',
+                state === 'done' && 'bg-ember-500',
+                state === 'current' && 'bg-ember-400/85',
+                state === 'idle' && 'bg-bone-50/10',
+              )}
+            />
+          );
+          if (!onJump) {
+            return <span key={i}>{bar}</span>;
+          }
+          return (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={i === step}
+              aria-label={`Step ${i + 1} of 4: ${STEPS[i]!.axis}`}
+              tabIndex={i === step ? 0 : -1}
+              data-cursor="link"
+              onClick={() => onJump(i as WizardStep)}
+              onKeyDown={(e) => onKey(e, i)}
+              className="flex h-8 w-12 items-center justify-center rounded-full focus-visible:bg-bone-50/5"
+            >
+              {bar}
+            </button>
+          );
+        })}
+        {/* Review marker, also clickable when onJump is provided. */}
+        {onJump ? (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={step === 4}
+            aria-label="Review final build"
+            tabIndex={step === 4 ? 0 : -1}
+            data-cursor="link"
+            onClick={() => onJump(4)}
+            onKeyDown={(e) => onKey(e, 4)}
+            className="ml-3 flex h-8 w-8 items-center justify-center rounded-full focus-visible:bg-bone-50/5"
+          >
+            <span
+              aria-hidden
+              className={clsx(
+                'block h-2 w-2 rounded-full transition-colors',
+                step === 4
+                  ? 'bg-ember-400 ring-2 ring-ember-500/40'
+                  : 'bg-bone-50/15',
+              )}
+            />
+          </button>
+        ) : (
           <span
-            key={i}
+            aria-hidden
             className={clsx(
-              'h-1 w-10 rounded-full transition-colors',
-              i < step && 'bg-ember-500',
-              i === step && 'bg-ember-400/85',
-              i > step && 'bg-bone-50/10',
+              'ml-3 h-2 w-2 rounded-full transition-colors',
+              step === 4 ? 'bg-ember-400 ring-2 ring-ember-500/40' : 'bg-bone-50/15',
             )}
           />
-        ))}
-        {/* Review marker: separate dot, lights up on the final stage. */}
-        <span
-          className={clsx(
-            'ml-3 h-2 w-2 rounded-full transition-colors',
-            step === 4 ? 'bg-ember-400 ring-2 ring-ember-500/40' : 'bg-bone-50/15',
-          )}
-          title="Review"
-        />
+        )}
       </div>
     </div>
   );

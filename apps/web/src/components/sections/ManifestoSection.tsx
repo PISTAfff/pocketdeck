@@ -108,7 +108,7 @@ export function ManifestoSection() {
           >
             Built to fidget,
             <br />
-            tuned to <span className="text-ember-500">ride</span>.
+            tuned to <span className="spray-text text-ember-500">ride</span>.
           </h2>
         </motion.div>
 
