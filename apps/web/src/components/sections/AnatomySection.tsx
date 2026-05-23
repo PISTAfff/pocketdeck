@@ -126,13 +126,13 @@ export function AnatomySection() {
                     {part.index}
                   </span>
                   <h3
-                    className="flex-1 font-display font-semibold tracking-[-0.02em] text-bone-50"
-                    style={{ fontSize: 'clamp(1.75rem, 4vw, 3rem)' }}
+                    className="display-headline flex-1 text-bone-50"
+                    style={{ fontSize: 'clamp(2rem, 4.5vw, 3.5rem)' }}
                   >
                     {part.label}
                   </h3>
                 </div>
-                <p className="mt-3 max-w-md font-sans text-sm text-bone-200 md:ml-[3.25rem] md:text-base">
+                <p className="mt-3 max-w-md font-sans text-sm text-bone-100 md:ml-[3.25rem] md:text-base">
                   {part.detail}
                 </p>
               </li>
@@ -141,18 +141,16 @@ export function AnatomySection() {
 
           {/* Heading column on the right, sticky on desktop */}
           <div className="md:sticky md:top-28 md:self-start md:pt-8">
-            <p className="font-mono text-xs tracking-[0.4em] text-bone-300 uppercase">
-              02 / anatomy
-            </p>
+            <span className="tape inline-block">02 · anatomy</span>
             <h2
-              className="mt-6 font-display font-semibold leading-[0.95] tracking-[-0.02em] text-bone-50"
-              style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}
+              className="display-headline mt-6 text-bone-50"
+              style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
             >
               Five parts.
               <br />
               <span className="text-ember-500">One pocket.</span>
             </h2>
-            <p className="mt-6 max-w-md font-sans text-base leading-relaxed text-bone-200">
+            <p className="mt-6 max-w-md font-sans text-base leading-relaxed text-bone-100">
               Scroll to dismantle. Every component is treated like its
               full-scale counterpart: same shapes, same engineering, same parts
               vendors where we could find them.

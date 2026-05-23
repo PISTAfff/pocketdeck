@@ -10,16 +10,21 @@
   --color-bone-100: #ece6d9;
   --color-bone-200: #d8cfbd;
   --color-bone-300: #b7ab92;
+  --color-bone-500: #6b6354;
   --color-ember-400: #ff7d3a;
   --color-ember-500: #ff5b14;
   --color-ember-600: #d94404;
 
-  /* next/font on the <html> element injects --font-inter and --font-jetbrains
-     (see app/layout.tsx). We wire those into the Tailwind font tokens here so
-     `font-sans` / `font-mono` / `font-display` utilities use them. */
-  --font-display: var(--font-inter), system-ui, -apple-system, sans-serif;
+  /* next/font on <html> injects:
+       --font-inter        (body / mid-weight)
+       --font-jetbrains    (mono captions)
+       --font-anton        (condensed display, big headlines)
+       --font-archivo-black (chunky black-weight grotesque, stickers + trick captions)
+     We wire those into Tailwind font tokens here. */
+  --font-display: var(--font-anton), 'Bebas Neue', 'Oswald', 'Helvetica Neue', sans-serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-black: var(--font-archivo-black), 'Helvetica Neue', sans-serif;
 
   --radius-md: 0.5rem;
   --radius-lg: 0.875rem;
@@ -29,7 +34,6 @@
     0 0 40px rgb(255 91 20 / 0.18), 0 0 100px rgb(255 91 20 / 0.08);
 }
 
-/* Reset + base */
 * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -40,11 +44,9 @@ body {
   background: var(--color-ink-950);
   color: var(--color-bone-50);
   font-family: var(--font-sans);
-  /* Custom cursor handles the pointer; hide native cursor where appropriate. */
   cursor: none;
 }
 
-/* Devices without fine pointer (touch) keep the native cursor. */
 @media (pointer: coarse) {
   html,
   body {
@@ -57,8 +59,6 @@ body {
   color: var(--color-ink-950);
 }
 
-/* Smooth scroll is handled by Lenis, disable the native version so the
-   two don't fight. */
 html.lenis,
 html.lenis body {
   height: auto;
@@ -73,7 +73,6 @@ html.lenis body {
   overflow: clip;
 }
 
-/* Persistent WebGL canvas sits behind all DOM content. */
 .scene-root {
   position: fixed;
   inset: 0;
@@ -83,13 +82,103 @@ html.lenis body {
   pointer-events: none;
 }
 
-/* DOM content sits above the canvas. */
 .page-root {
   position: relative;
   z-index: 1;
 }
 
-/* Reusable utility for clip-path image reveals (used by sections). */
+/* --- Street-aesthetic primitives ----------------------------------------- */
+
+/**
+ * Film-grain overlay. SVG fractal noise is data-URL'd into a fixed pseudo-
+ * element under the nav. Soft-light blends it over both the canvas and the
+ * DOM, screen-mixing the brighter areas so the whole page reads "stock film"
+ * instead of "premium product render."
+ */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.96  0 0 0 0 0.95  0 0 0 0 0.91  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 240px 240px;
+  /* Slowly drift the grain so it never feels static, but slow enough to be
+     subconscious rather than distracting. */
+  animation: grain-drift 8s steps(8) infinite;
+}
+
+@keyframes grain-drift {
+  0% { background-position: 0 0; }
+  25% { background-position: -40px 12px; }
+  50% { background-position: 16px -22px; }
+  75% { background-position: -28px -8px; }
+  100% { background-position: 0 0; }
+}
+
+/**
+ * Halftone dot field. A radial-gradient of tiny ember dots, masked by an
+ * opacity gradient. Drop into a section as a positioned <div>.
+ */
+@utility halftone {
+  background-image: radial-gradient(
+    rgba(255, 91, 20, 0.42) 1px,
+    transparent 1.4px
+  );
+  background-size: 12px 12px;
+}
+
+/**
+ * Sticker badge: chunky grotesque on a tilted card, with a soft drop shadow.
+ * Pair with .sticker-tape for a strip of "tape" along one edge.
+ */
+@utility sticker {
+  display: inline-block;
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-black);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: var(--color-bone-50);
+  color: var(--color-ink-950);
+  border-radius: 4px;
+  transform: rotate(-3deg);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+@utility sticker-ember {
+  background: var(--color-ember-500);
+  color: var(--color-ink-950);
+}
+
+/** Tape strip, like masking tape laid across the section. */
+@utility tape {
+  position: relative;
+  display: inline-block;
+  padding: 0.3rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  background: rgba(255, 91, 20, 0.18);
+  color: var(--color-ember-400);
+  transform: rotate(-1.5deg);
+  border-left: 2px solid rgba(255, 91, 20, 0.5);
+  border-right: 2px solid rgba(255, 91, 20, 0.5);
+}
+
+/** Display headline preset: Anton, all caps tracking, condensed weight. */
+@utility display-headline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  line-height: 0.86;
+  text-transform: uppercase;
+}
+
 @utility clip-reveal {
   clip-path: inset(0 0 100% 0);
   transition: clip-path 1.2s cubic-bezier(0.65, 0, 0.35, 1);

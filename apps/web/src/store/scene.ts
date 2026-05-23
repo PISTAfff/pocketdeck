@@ -35,6 +35,9 @@ export type SectionId =
   | 'tricks'
   | 'order';
 
+/** Identifies a major part of the deck for the configurator's part highlight. */
+export type DeckPart = 'deck' | 'wheel' | 'truck' | 'grip';
+
 export interface SceneState {
   /** The current product configuration. Mirrors the selection sent to the API. */
   selection: ConfigurationSelection;
@@ -63,6 +66,14 @@ export interface SceneState {
   /** Persistent canvas wrapper opacity 0..1, set by the scroll handler. */
   sceneOpacity: number;
   setSceneOpacity: (v: number) => void;
+
+  /**
+   * Which deck part the configurator wizard currently focuses on. When set,
+   * the Deck component dims the other parts so the active component pops.
+   * null when no part is being edited (e.g. hero, review step).
+   */
+  highlightPart: DeckPart | null;
+  setHighlightPart: (p: DeckPart | null) => void;
 }
 
 const DEFAULT_SELECTION: ConfigurationSelection = {
@@ -94,4 +105,7 @@ export const useSceneStore = create<SceneState>((set) => ({
 
   sceneOpacity: 1,
   setSceneOpacity: (v) => set({ sceneOpacity: v }),
+
+  highlightPart: null,
+  setHighlightPart: (p) => set({ highlightPart: p }),
 }));

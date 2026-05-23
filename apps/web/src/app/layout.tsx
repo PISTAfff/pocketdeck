@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono, Anton, Archivo_Black } from 'next/font/google';
 import { SceneRoot } from '@/components/scene/SceneRoot';
 import { ChromeRoot } from '@/components/layout/ChromeRoot';
 import { Preloader } from '@/components/ui/Preloader';
@@ -17,6 +17,23 @@ const jetbrains = JetBrains_Mono({
   variable: '--font-jetbrains',
   display: 'swap',
   weight: ['400', '500', '600'],
+});
+
+// Condensed display face for the big headlines. Anton is industrial and tall;
+// it carries the skate / street feel without leaning on a stencil cliche.
+const anton = Anton({
+  subsets: ['latin'],
+  variable: '--font-anton',
+  display: 'swap',
+  weight: ['400'],
+});
+
+// Chunky grotesque for sticker badges and trick captions.
+const archivoBlack = Archivo_Black({
+  subsets: ['latin'],
+  variable: '--font-archivo-black',
+  display: 'swap',
+  weight: ['400'],
 });
 
 export const metadata: Metadata = {
@@ -58,12 +75,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${jetbrains.variable}`}
+      className={`${inter.variable} ${jetbrains.variable} ${anton.variable} ${archivoBlack.variable}`}
     >
       <body>
         <Preloader />
         <SceneRoot />
         <ChromeRoot>{children}</ChromeRoot>
+        {/* Film grain overlay, pointer-none, screen blend, fixed under nav */}
+        <div aria-hidden className="grain-overlay" />
       </body>
     </html>
   );

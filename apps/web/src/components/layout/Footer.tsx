@@ -48,7 +48,8 @@ export function Footer() {
     { href: '#hero', label: 'Top' },
     { href: '#manifesto', label: 'Manifesto' },
     { href: '#anatomy', label: 'Anatomy' },
-    { href: '#configurator', label: 'Configurator' },
+    { href: '#configurator', label: 'Configure' },
+    { href: '#tricks', label: 'Tricks' },
     { href: '#order', label: 'Order' },
   ];
 

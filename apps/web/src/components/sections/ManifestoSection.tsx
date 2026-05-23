@@ -102,12 +102,10 @@ export function ManifestoSection() {
     >
       <div className="mx-auto grid max-w-[1400px] gap-12 md:grid-cols-[1fr_1.4fr] md:gap-20">
         <div ref={headlineRef} className="md:h-[80vh] md:py-[10vh]">
-          <p className="font-mono text-xs tracking-[0.4em] text-bone-300 uppercase">
-            01 / manifesto
-          </p>
+          <span className="tape inline-block">01 · manifesto</span>
           <h2
-            className="mt-6 font-display font-semibold leading-[0.95] tracking-[-0.02em] text-bone-50"
-            style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}
+            className="display-headline mt-6 text-bone-50"
+            style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5.5rem)' }}
           >
             Built to fidget,
             <br />
@@ -119,10 +117,10 @@ export function ManifestoSection() {
             <p
               key={line}
               data-manifesto-line
-              className="font-display leading-[1.1] text-bone-100"
-              style={{ fontSize: 'clamp(1.5rem, 3.2vw, 2.75rem)' }}
+              className="display-headline leading-[1] text-bone-50"
+              style={{ fontSize: 'clamp(1.75rem, 4vw, 3.5rem)' }}
             >
-              <span className="mr-4 align-top font-mono text-[11px] tracking-[0.3em] text-ember-500 uppercase">
+              <span className="mr-4 align-top font-mono text-[11px] tracking-[0.3em] text-ember-500 normal-case">
                 {String(i + 1).padStart(2, '0')}
               </span>
               {line}

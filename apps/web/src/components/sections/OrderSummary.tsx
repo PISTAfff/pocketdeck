@@ -25,12 +25,10 @@ export function OrderSummary({
   const sku = skuFromSelection(productSlug, selection);
   return (
     <div>
-      <p className="font-mono text-xs tracking-[0.4em] text-bone-300 uppercase">
-        05 / order
-      </p>
+      <span className="tape inline-block">05 · order</span>
       <h2
-        className="mt-6 font-display font-semibold leading-[0.95] tracking-[-0.02em] text-bone-50"
-        style={{ fontSize: 'clamp(2rem, 5vw, 4rem)' }}
+        className="display-headline mt-6 text-bone-50"
+        style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
       >
         Ship it.
       </h2>

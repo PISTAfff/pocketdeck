@@ -77,37 +77,44 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
   },
 };
 
+/**
+ * Deck scale is intentionally compact, the product is called PocketDeck.
+ * Tuned so the model fits roughly in one column of the layout grid instead of
+ * spanning the viewport.
+ */
 const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
   hero: {
-    position: [0, 0.15, 0],
+    position: [0.6, 0.15, 0],
     rotation: [-0.18, 0.45, 0.02],
-    scale: 1.0,
+    scale: 0.58,
   },
   manifesto: {
     // Pushed right so the pinned copy on the left half is uninterrupted.
-    position: [1.4, 0.0, 0],
+    position: [1.7, 0.0, 0],
     rotation: [-0.05, 0.95, 0.18],
-    scale: 1.0,
+    scale: 0.6,
   },
   anatomy: {
-    position: [1.4, 0, 0],
+    position: [1.6, 0, 0],
     rotation: [-Math.PI / 2 + 0.18, 0, 0],
-    scale: 1.05,
+    scale: 0.7,
   },
   configurator: {
-    position: [1.2, 0, 0],
+    // Closer in but smaller so the model sits comfortably to the right of
+    // the price panel, not on top of it.
+    position: [1.4, 0, 0],
     rotation: [-0.25, 0, 0],
-    scale: 1.1,
+    scale: 0.78,
   },
   tricks: {
     position: [0, 0.4, 0],
     rotation: [-0.3, 0.6, 0],
-    scale: 1.0,
+    scale: 0.55,
   },
   order: {
     position: [0, 0, 0],
     rotation: [-0.1, 0.2, 0],
-    scale: 1.0,
+    scale: 0.55,
   },
 };
 

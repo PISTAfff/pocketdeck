@@ -1,34 +1,33 @@
 'use client';
 
 /**
- * TrickTile, one looping <video> with hover-scrub.
+ * TrickTile, one looping video with hover-scrub plus a chunky street label
+ * stack. Each trick gets:
+ *   - a big number (01..N) set in Archivo Black
+ *   - the trick name in the condensed display face
+ *   - a unique SVG glyph that visualizes its motion (board path, rotation
+ *     arrow, grind rail) so the tiles are distinguishable even without real
+ *     clip footage
  *
- * Affordances added in the polish pass:
- *   - centered play icon on idle; tile shows "Drag to scrub" tooltip on first
- *     hover so the interaction is discoverable
- *   - scrub progress bar pinned to the bottom that fills with pointer x
- *   - opaque label backdrop so the OLLIE / KICKFLIP / etc. text always reads
- *     against the gradient
- *
- * Real clip URLs can be passed via `src`; without one the gradient poster
- * stands in.
+ * Hover affordances stay: centered play icon (idle), scrub bar (active),
+ * one-shot "Drag to scrub" hint on first hover per session.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
+import { TrickGlyph } from './TrickGlyph';
 
 interface TrickTileProps {
   id: string;
+  number: number;
   name: string;
   description: string;
   src?: string;
-  /** Optional taller tile in the grid. */
-  accent?: boolean;
 }
 
 const SCRUB_DURATION_FALLBACK = 4.2;
 const FIRST_HOVER_HINT_KEY = 'pocketdeck:tricks-hint';
 
-export function TrickTile({ id, name, description, src, accent }: TrickTileProps) {
+export function TrickTile({ id, number, name, description, src }: TrickTileProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [hovering, setHovering] = useState(false);
   const [scrubPct, setScrubPct] = useState(0);
@@ -37,7 +36,6 @@ export function TrickTile({ id, name, description, src, accent }: TrickTileProps
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.sessionStorage.getItem(FIRST_HOVER_HINT_KEY)) {
-      // Show the hint only on the very first hover, repo-wide.
       setShowHint(true);
     }
   }, []);
@@ -57,7 +55,7 @@ export function TrickTile({ id, name, description, src, accent }: TrickTileProps
       video.pause();
       video.currentTime = pct * total;
     } catch {
-      // Some browsers throw on seeking before metadata is loaded, ignore.
+      // Some browsers throw on seeking before metadata is loaded.
     }
   }, []);
 
@@ -77,30 +75,43 @@ export function TrickTile({ id, name, description, src, accent }: TrickTileProps
     setShowHint(false);
     const video = videoRef.current;
     if (!video) return;
-    void video.play().catch(() => {
-      // Autoplay can be blocked, no-op, the poster remains visible.
-    });
+    void video.play().catch(() => {});
   }, []);
 
   return (
     <article
-      className={clsx(
-        'group relative overflow-hidden rounded-xl border border-bone-50/10 bg-ink-900',
-        accent ? 'md:col-span-2' : '',
-        // Equal-height tiles via fixed aspect on every card.
-        'aspect-[4/5]',
-      )}
+      className="group relative aspect-[4/5] overflow-hidden rounded-xl border border-bone-50/10 bg-ink-900"
       onPointerEnter={onEnter}
       onPointerLeave={onLeave}
       onPointerMove={onMove}
       data-cursor="link"
       aria-label={`${name}, hover and drag horizontally to scrub the clip`}
     >
+      {/* Background gradient seeded by the trick id */}
       <div
         aria-hidden
         className="absolute inset-0"
         style={{ background: poster(id) }}
       />
+
+      {/* Subtle halftone dot field overlay */}
+      <div
+        aria-hidden
+        className="halftone absolute inset-0 opacity-25 [mask-image:radial-gradient(110%_85%_at_50%_50%,#000,transparent_75%)]"
+      />
+
+      {/* Trick motion glyph */}
+      <div
+        aria-hidden
+        className="absolute inset-0 flex items-center justify-center"
+      >
+        <TrickGlyph
+          id={id}
+          className="h-[70%] w-[70%] text-bone-50/30 transition-transform duration-700 group-hover:scale-105 group-hover:text-bone-50/55"
+        />
+      </div>
+
+      {/* Optional <video> when a real clip is wired in */}
       <video
         ref={videoRef}
         playsInline
@@ -116,6 +127,13 @@ export function TrickTile({ id, name, description, src, accent }: TrickTileProps
         )}
       />
 
+      {/* Sticker number, top-right corner, slightly rotated */}
+      <div className="absolute top-4 right-4 z-10">
+        <span className="sticker sticker-ember">
+          {String(number).padStart(2, '0')}
+        </span>
+      </div>
+
       {/* Centered play icon (idle) */}
       <div
         aria-hidden
@@ -124,8 +142,14 @@ export function TrickTile({ id, name, description, src, accent }: TrickTileProps
           hovering ? 'opacity-0' : 'opacity-100',
         )}
       >
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ink-950/55 backdrop-blur-md ring-1 ring-bone-50/15 transition-transform duration-300 group-hover:scale-110">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" className="text-bone-50 translate-x-[1px]">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-ink-950/55 ring-1 ring-bone-50/15 backdrop-blur-md transition-transform duration-300 group-hover:scale-110">
+          <svg
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+            fill="currentColor"
+            className="translate-x-[1px] text-bone-50"
+          >
             <path d="M8 5v14l11-7z" />
           </svg>
         </span>
@@ -135,21 +159,26 @@ export function TrickTile({ id, name, description, src, accent }: TrickTileProps
       {showHint && hovering && (
         <div
           aria-hidden
-          className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-ink-950/85 px-4 py-1.5 font-mono text-[10px] tracking-[0.28em] text-bone-50 uppercase ring-1 ring-bone-50/10 backdrop-blur"
+          className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 rounded-full bg-ink-950/90 px-4 py-1.5 font-mono text-[10px] tracking-[0.28em] text-bone-50 uppercase ring-1 ring-bone-50/10 backdrop-blur"
         >
           Drag to scrub
         </div>
       )}
 
-      {/* Label block with opaque backdrop so contrast is always AA+ */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 bg-gradient-to-t from-ink-950 via-ink-950/80 to-ink-950/0 p-5 pb-7">
+      {/* Label stack, bottom-left, oversized */}
+      <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-3 bg-gradient-to-t from-ink-950 via-ink-950/85 to-ink-950/0 p-5 pt-12 pb-7">
         <div>
-          <p className="font-mono text-xs font-medium tracking-[0.32em] text-ember-400 uppercase">
+          <h3
+            className="display-headline leading-[0.9] text-bone-50"
+            style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2.25rem)' }}
+          >
             {name}
+          </h3>
+          <p className="mt-1 max-w-[18ch] font-sans text-sm text-bone-100">
+            {description}
           </p>
-          <p className="mt-1 font-sans text-sm text-bone-100">{description}</p>
         </div>
-        <p className="font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase tabular-nums">
+        <p className="font-mono text-[10px] tracking-[0.32em] text-bone-200 uppercase tabular-nums">
           {hovering ? `${Math.round(scrubPct * 100)}%` : 'loop'}
         </p>
       </div>

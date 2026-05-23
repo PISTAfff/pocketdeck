@@ -41,6 +41,17 @@ const EMPTY_FORM: CustomerForm = {
   governorate: '',
 };
 
+const PHONE_RE = /^01[0-2,5]\d{8}$/;
+
+function isFormReady(form: CustomerForm): boolean {
+  return (
+    form.name.trim().length >= 2 &&
+    PHONE_RE.test(form.phone.trim()) &&
+    form.address.trim().length >= 5 &&
+    form.governorate !== ''
+  );
+}
+
 export function OrderSection() {
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
   const selection = useSceneStore((s) => s.selection);
@@ -50,6 +61,7 @@ export function OrderSection() {
   const [form, setForm] = useState<CustomerForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [status, setStatus] = useState<OrderStatus>({ kind: 'idle' });
+  const ready = isFormReady(form);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -157,6 +169,7 @@ export function OrderSection() {
             onChange={(v) => onChange('address', v)}
             error={errors['customer.address']}
             placeholder="Street, building, apartment"
+            helper="Where the courier should drop it off. 5 to 200 characters."
             autoComplete="street-address"
             multiline
           />
@@ -167,6 +180,9 @@ export function OrderSection() {
             >
               Governorate
             </label>
+            <p className="font-mono text-[11px] tracking-wide text-bone-300">
+              Used to route the courier. Cairo, Giza, and Alexandria ship in 24h.
+            </p>
             <div className="relative">
               <select
                 id="governorate"
@@ -206,10 +222,18 @@ export function OrderSection() {
           <div className="mt-4 flex flex-col items-start gap-4 border-t border-bone-50/10 pt-6">
             <MagneticButton
               type="submit"
-              disabled={status.kind === 'submitting'}
-              innerClassName="rounded-full bg-ember-500 px-10 py-5 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400 disabled:opacity-60"
+              disabled={status.kind === 'submitting' || !ready}
+              innerClassName={
+                ready
+                  ? 'rounded-full bg-ember-500 px-10 py-5 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400 disabled:opacity-60'
+                  : 'cursor-not-allowed rounded-full bg-bone-50/10 px-10 py-5 font-mono text-sm tracking-[0.24em] text-bone-300 uppercase'
+              }
             >
-              {status.kind === 'submitting' ? 'Placing order...' : 'Confirm order'}
+              {status.kind === 'submitting'
+                ? 'Placing order...'
+                : ready
+                  ? 'Confirm order'
+                  : 'Fill the form to continue'}
             </MagneticButton>
             <FormStatusLine status={status} />
           </div>
