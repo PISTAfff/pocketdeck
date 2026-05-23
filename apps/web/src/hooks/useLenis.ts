@@ -27,8 +27,8 @@ import { useScrollTrigger, ScrollTrigger } from './useScrollTrigger';
  * canvas at full opacity until then and fade out across the brief gap
  * before Tricks.
  */
-const FADE_START = 0.74;
-const FADE_END = 0.81;
+const FADE_START = 0.79;
+const FADE_END = 0.86;
 
 function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));

@@ -17,12 +17,18 @@
  * The result: Noir reads as black, Midnight as deep blue, Gunmetal as
  * grey, while the warm/cool/ember accents still give the scene mood.
  */
-import { ContactShadows } from '@react-three/drei';
+import { ContactShadows, Environment } from '@react-three/drei';
 
 export function Lighting() {
   return (
     <>
-      <ambientLight intensity={0.45} color="#e0e3ec" />
+      {/* Studio HDRI cube so metallic materials (Chrome wheels, Silver /
+          Gunmetal / Rose-Gold trucks) have something real to reflect.
+          Without it, metalness > 0.9 looks like flat grey. environmentIntensity
+          kept modest so it doesn't blow out the moody palette. */}
+      <Environment preset="studio" environmentIntensity={0.45} />
+
+      <ambientLight intensity={0.4} color="#e0e3ec" />
 
       {/* Key light, gentle warm, top-front-right. */}
       <directionalLight
@@ -37,6 +43,18 @@ export function Lighting() {
         position={[-5, 3.5, -4]}
         intensity={1.0}
         color="#a4b8ff"
+      />
+
+      {/* Specular hit from camera-right at high angle. Mainly for the
+          chrome / silver wheels and the truck hangers so they catch a
+          crisp highlight as the user rotates through colors. */}
+      <spotLight
+        position={[3, 5, 4]}
+        angle={0.6}
+        penumbra={0.5}
+        intensity={1.1}
+        color="#ffffff"
+        distance={18}
       />
 
       {/* Ember underglow, just a hint of brand accent from below. */}

@@ -71,15 +71,17 @@ const CAMERA_KEYFRAMES: Record<SectionId, CameraKeyframe> = {
     target: [0, 0.3, 0],
     fov: 28,
   },
+  // Tricks + Order share the Configurator camera too so the canvas
+  // doesn't pan while opacity is fading to zero.
   tricks: {
-    position: [4.8, 0.6, 6.8],
-    target: [0, 0, 0],
-    fov: 36,
+    position: [0, 0.4, 7.4],
+    target: [0, 0.3, 0],
+    fov: 28,
   },
   order: {
-    position: [0, 1.4, 7.0],
-    target: [0, 0, 0],
-    fov: 30,
+    position: [0, 0.4, 7.4],
+    target: [0, 0.3, 0],
+    fov: 28,
   },
 };
 
@@ -111,14 +113,19 @@ const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
     rotation: [-0.18, 0.42, 0],
     scale: 0.55,
   },
+  // Tricks + Order intentionally inherit the Configurator pose. The deck
+  // fades to zero opacity well before either section is fully in view, but
+  // if the position were different the user would see the deck slide
+  // across the screen as it faded — feels like the deck is "running away".
+  // Holding the pose means it just dissolves in place.
   tricks: {
-    position: [0, 0.4, 0],
-    rotation: [-0.3, 0.6, 0],
+    position: [1.5, 0.85, 0],
+    rotation: [-0.18, 0.42, 0],
     scale: 0.55,
   },
   order: {
-    position: [0, 0, 0],
-    rotation: [-0.1, 0.2, 0],
+    position: [1.5, 0.85, 0],
+    rotation: [-0.18, 0.42, 0],
     scale: 0.55,
   },
 };

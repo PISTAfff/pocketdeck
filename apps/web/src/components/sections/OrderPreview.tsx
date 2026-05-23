@@ -194,8 +194,9 @@ function RotatingDeck({ autoRotate }: RotatingDeckProps) {
 
 /**
  * Pattern-specific grip accent for the order preview. Mirrors the
- * GripPatternAccent helper in Deck.tsx, so the review and the main
- * configurator scene show the same grip patterns.
+ * GripPatternAccent in Deck.tsx exactly so the small preview tile, the
+ * expanded fullscreen view, and the main configurator scene all show
+ * the same level of grip detail.
  */
 function GripAccent({
   pattern,
@@ -205,16 +206,23 @@ function GripAccent({
   paint: MaterialPaint;
 }) {
   const accentColor = paint.accent ?? '#1a1a22';
-  const topY = DECK.thickness / 2 + GRIP.thickness + 0.002;
+  const topY = DECK.thickness / 2 + GRIP.thickness + 0.003;
   const gripLength = DECK.length - GRIP.inset;
   const gripWidth = DECK.width - GRIP.inset;
 
   if (pattern === 'tiger') {
+    const stripes = [
+      { z: -gripWidth * 0.36, w: gripWidth * 0.06 },
+      { z: -gripWidth * 0.18, w: gripWidth * 0.08 },
+      { z: 0, w: gripWidth * 0.1 },
+      { z: gripWidth * 0.18, w: gripWidth * 0.08 },
+      { z: gripWidth * 0.36, w: gripWidth * 0.06 },
+    ];
     return (
       <group position={[0, topY, 0]}>
-        {[-gripWidth * 0.28, 0, gripWidth * 0.28].map((z, i) => (
-          <mesh key={i} position={[0, 0, z]}>
-            <boxGeometry args={[gripLength * 0.86, 0.005, gripWidth * 0.08]} />
+        {stripes.map((s, i) => (
+          <mesh key={i} position={[0, 0, s.z]}>
+            <boxGeometry args={[gripLength * 0.88, 0.006, s.w]} />
             <meshStandardMaterial
               color={accentColor}
               roughness={paint.roughness}
@@ -227,7 +235,7 @@ function GripAccent({
   }
 
   if (pattern === 'topo') {
-    const rings = [0.18, 0.32, 0.46, 0.6];
+    const rings = [0.14, 0.24, 0.34, 0.44, 0.54, 0.64];
     return (
       <group position={[0, topY, 0]}>
         {rings.map((scale, i) => (
@@ -236,11 +244,13 @@ function GripAccent({
             rotation={[Math.PI / 2, 0, 0]}
             scale={[gripLength * scale, gripWidth * scale * 0.55, 1]}
           >
-            <ringGeometry args={[0.45, 0.5, 48]} />
+            <ringGeometry args={[0.45, 0.5, 64]} />
             <meshStandardMaterial
               color={accentColor}
               roughness={paint.roughness}
               metalness={paint.metalness}
+              transparent
+              opacity={1 - i * 0.06}
               side={2}
             />
           </mesh>
@@ -249,12 +259,26 @@ function GripAccent({
     );
   }
 
-  // classic
+  // classic: 6x3 grit-dot grid
+  const cols = 6;
+  const rows = 3;
+  const dots: { x: number; z: number }[] = [];
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      const t = i / (cols - 1);
+      const u = j / (rows - 1);
+      dots.push({
+        x: (t - 0.5) * gripLength * 0.78,
+        z: (u - 0.5) * gripWidth * 0.6,
+      });
+    }
+  }
+  const dotR = gripWidth * 0.025;
   return (
     <group position={[0, topY, 0]}>
-      {[-gripLength * 0.28, 0, gripLength * 0.28].map((x, i) => (
-        <mesh key={i} position={[x, 0, 0]}>
-          <cylinderGeometry args={[gripWidth * 0.06, gripWidth * 0.06, 0.004, 24]} />
+      {dots.map((d, i) => (
+        <mesh key={i} position={[d.x, 0, d.z]}>
+          <cylinderGeometry args={[dotR, dotR, 0.005, 16]} />
           <meshStandardMaterial
             color={accentColor}
             roughness={paint.roughness}
