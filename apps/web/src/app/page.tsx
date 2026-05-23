@@ -1,29 +1,26 @@
 /**
- * Home page — Phase 1 placeholder.
+ * Home — the single PocketDeck experience.
  *
- * Phase 2C will replace this with the real assembled sections:
- *   <HeroSection />, <ManifestoSection />, <AnatomySection />,
- *   <ConfiguratorSection />, <TricksSection />, <OrderSection />, <Footer />
- *
- * Each section is a standalone component that may register scroll keyframes
- * with the scene controller (Phase 2B) via the Zustand store.
+ * Sections are assembled here in order. ChromeRoot (in layout.tsx) renders the
+ * Nav at the top and the Footer below children. The persistent WebGL scene
+ * is fixed-position behind every section.
  */
+import { HeroSection } from '@/components/sections/HeroSection';
+import { ManifestoSection } from '@/components/sections/ManifestoSection';
+import { AnatomySection } from '@/components/sections/AnatomySection';
+import { ConfiguratorSection } from '@/components/sections/ConfiguratorSection';
+import { TricksSection } from '@/components/sections/TricksSection';
+import { OrderSection } from '@/components/sections/OrderSection';
+
 export default function HomePage() {
   return (
-    <main className="relative min-h-screen">
-      <section className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
-        <p className="font-mono text-xs uppercase tracking-[0.4em] text-bone-300">
-          pocketdeck — 0.1.0
-        </p>
-        <h1 className="mt-4 text-5xl font-semibold text-bone-50 md:text-7xl">
-          Scaffold ready.
-        </h1>
-        <p className="mt-4 max-w-md text-sm text-bone-300">
-          Phase 1 complete. The monorepo, contract, and shared types are in place.
-          Run <code className="font-mono text-ember-400">pnpm dev</code> to start
-          both apps.
-        </p>
-      </section>
+    <main className="relative">
+      <HeroSection />
+      <ManifestoSection />
+      <AnatomySection />
+      <ConfiguratorSection />
+      <TricksSection />
+      <OrderSection />
     </main>
   );
 }
