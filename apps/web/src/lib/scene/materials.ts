@@ -1,10 +1,13 @@
 /**
  * Material palette for the procedural fingerboard.
  *
- * Mirrors the swatchHex / priceModifier values that the backend (Phase 2A)
- * seeds for each variant. The frontend Configurator should read the canonical
- * values from the API for display; this file is only the visual palette used
- * by the 3D scene so we can re-color materials instantly.
+ * The `color` of every entry is held in lock-step with the seed's
+ * `swatchHex` (apps/api/src/seed/data.ts). That way the swatch you click
+ * in the configurator and the surface you see in 3D are the same hex.
+ *
+ * Metalness / roughness / emissive are still tuned per material, since
+ * those don't change what color a user perceives; they only affect how
+ * the material reacts to light.
  */
 import type {
   DeckGraphic,
@@ -25,21 +28,22 @@ export interface MaterialPaint {
   emissiveIntensity?: number;
 }
 
+// --- Deck graphics. swatchHex from seed/data.ts ----------------------------
 export const DECK_MATERIALS: Record<DeckGraphic, MaterialPaint> = {
   noir: {
-    color: '#0d0d12',
+    color: '#0b0b0d',
     accent: '#1a1a22',
     metalness: 0.2,
     roughness: 0.55,
   },
   sunburst: {
-    color: '#c2410c',
-    accent: '#fbbf24',
+    color: '#f4a93a',
+    accent: '#c2410c',
     metalness: 0.15,
     roughness: 0.45,
   },
   circuit: {
-    color: '#0f172a',
+    color: '#1a4d4a',
     accent: '#22d3ee',
     metalness: 0.45,
     roughness: 0.35,
@@ -47,7 +51,7 @@ export const DECK_MATERIALS: Record<DeckGraphic, MaterialPaint> = {
     emissiveIntensity: 0.18,
   },
   'gold-leaf': {
-    color: '#1a1410',
+    color: '#c9a14a',
     accent: '#f5c451',
     metalness: 0.75,
     roughness: 0.25,
@@ -56,58 +60,62 @@ export const DECK_MATERIALS: Record<DeckGraphic, MaterialPaint> = {
   },
 };
 
+// --- Wheels. swatchHex from seed/data.ts -----------------------------------
 export const WHEEL_MATERIALS: Record<WheelColor, MaterialPaint> = {
   bone: {
-    color: '#ece6d9',
+    color: '#efe6d6',
     metalness: 0.05,
     roughness: 0.55,
   },
   ember: {
-    color: '#ff5b14',
+    color: '#d94a2b',
     metalness: 0.1,
     roughness: 0.4,
-    emissive: '#ff5b14',
+    emissive: '#d94a2b',
     emissiveIntensity: 0.18,
   },
   midnight: {
-    color: '#1d2233',
+    color: '#1f2238',
     metalness: 0.1,
     roughness: 0.5,
   },
   lagoon: {
-    color: '#0fb9b1',
+    color: '#1f7a8c',
     metalness: 0.1,
     roughness: 0.45,
   },
   chrome: {
-    color: '#d8dde6',
+    color: '#bcbec4',
     metalness: 0.95,
     roughness: 0.15,
   },
 };
 
+// --- Trucks. swatchHex from seed/data.ts -----------------------------------
 export const TRUCK_MATERIALS: Record<TruckColor, MaterialPaint> = {
   silver: {
-    color: '#c9ccd1',
+    color: '#bcc0c5',
     metalness: 0.95,
     roughness: 0.25,
   },
   gunmetal: {
-    color: '#3a3f47',
+    color: '#3a3d44',
     metalness: 0.85,
     roughness: 0.35,
   },
   'rose-gold': {
-    color: '#d4928a',
+    color: '#b76e79',
     metalness: 0.9,
     roughness: 0.22,
   },
 };
 
+// --- Grip. The grip swatches use SVG thumbnails rather than a single hex;
+// we keep the base+accent palette aligned to the SVG colors.
 export const GRIP_MATERIALS: Record<GripPattern, MaterialPaint> = {
   classic: {
     color: '#0a0a0e',
-    accent: '#1a1a22',
+    accent: '#1f1f26',
     metalness: 0.05,
     roughness: 0.95,
   },

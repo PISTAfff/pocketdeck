@@ -107,6 +107,11 @@ function PaintedMaterial({
   dimOpacity?: number;
 }) {
   const effective = applyGlow(applyDim(paint, dim), glow);
+  // Keep `transparent` true at all times. Toggling it forces three.js to
+  // recompile the material, which used to flash the previous color before
+  // the new color landed (the "pick pink, see blue" issue). With opacity
+  // alone driving the dim state, every color change is a pure uniform
+  // update on the same material instance.
   return (
     <meshStandardMaterial
       color={effective.color}
@@ -114,7 +119,7 @@ function PaintedMaterial({
       roughness={effective.roughness}
       emissive={effective.emissive ?? '#000000'}
       emissiveIntensity={effective.emissiveIntensity ?? 0}
-      transparent={dim}
+      transparent
       opacity={dim ? dimOpacity : 1}
     />
   );
@@ -240,7 +245,7 @@ function Wheel({
           color="#1a1a22"
           metalness={0.85}
           roughness={0.3}
-          transparent={dim}
+          transparent
           opacity={dim ? dimOpacity : 1}
         />
       </mesh>
@@ -352,7 +357,7 @@ export function Deck() {
                 roughness={deckPaint.roughness}
                 emissive={deckPaint.emissive ?? '#000000'}
                 emissiveIntensity={(deckPaint.emissiveIntensity ?? 0) * 0.5}
-                transparent={dimDeck}
+                transparent
                 opacity={dimDeck ? dimOp : 1}
               />
             </mesh>
@@ -387,7 +392,7 @@ export function Deck() {
                 color={gripPaint.accent}
                 roughness={gripPaint.roughness}
                 metalness={gripPaint.metalness}
-                transparent={dimGrip}
+                transparent
                 opacity={dimGrip ? dimOp : 1}
               />
             </mesh>
