@@ -352,7 +352,7 @@ export function ConfiguratorSection() {
                     : 'cursor-not-allowed bg-bone-50/10 text-bone-300',
                 )}
               >
-                {stockInfo && !stockInfo.inStock ? 'Out of stock' : 'Review & order →'}
+                {stockInfo && !stockInfo.inStock ? 'Out of stock' : 'Buy now →'}
               </MagneticButton>
             )}
           </footer>

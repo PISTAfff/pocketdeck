@@ -1,0 +1,237 @@
+'use client';
+
+/**
+ * OrderPreview, a self-contained R3F scene that shows the final custom
+ * deck rotating slowly.
+ *
+ * Used by the Order ("Review & Buy") section. Independent of the global
+ * persistent canvas:
+ *   - dedicated <Canvas> mounted inside its container so the canvas can
+ *     resize / animate with its parent (small box vs fullscreen)
+ *   - reads `selection` from the scene store (so it always reflects the
+ *     latest build the user configured)
+ *   - auto-rotates on Y; gentle nod on X for life
+ *   - doesn't sync to scene keyframes at all (it's about the final
+ *     product, not the page section)
+ *
+ * The deck geometry is a stripped-down version of Deck.tsx — same
+ * dimension constants and material maps, but no exploded-view / no
+ * keyframe-driven motion / no part dimming.
+ */
+import { Suspense, useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { RoundedBox, ContactShadows } from '@react-three/drei';
+import { Group, MathUtils } from 'three';
+import { useSceneStore } from '@/store/scene';
+import {
+  DECK_MATERIALS,
+  WHEEL_MATERIALS,
+  TRUCK_MATERIALS,
+  GRIP_MATERIALS,
+  type MaterialPaint,
+} from '@/lib/scene/materials';
+
+const DECK = { length: 5.4, width: 1.6, thickness: 0.12, cornerRadius: 0.22 };
+const GRIP = { thickness: 0.02, inset: 0.06 };
+const TRUCK = {
+  baseplateW: 1.0,
+  baseplateD: 0.55,
+  baseplateH: 0.08,
+  hangerW: 1.7,
+  hangerD: 0.32,
+  hangerH: 0.18,
+  axleLen: 2.1,
+  axleR: 0.04,
+  offsetX: 1.85,
+  dropY: -0.16,
+};
+const WHEEL_DIM = {
+  radius: 0.28,
+  width: 0.22,
+  offsetZ: 0.92,
+  bearingR: 0.08,
+  bearingW: 0.24,
+};
+
+function Mat({ paint }: { paint: MaterialPaint }) {
+  return (
+    <meshStandardMaterial
+      color={paint.color}
+      metalness={paint.metalness}
+      roughness={paint.roughness}
+      emissive={paint.emissive ?? '#000000'}
+      emissiveIntensity={paint.emissiveIntensity ?? 0}
+    />
+  );
+}
+
+function Truck({
+  isFront,
+  truckPaint,
+  wheelPaint,
+}: {
+  isFront: boolean;
+  truckPaint: MaterialPaint;
+  wheelPaint: MaterialPaint;
+}) {
+  const baseX = isFront ? TRUCK.offsetX : -TRUCK.offsetX;
+  return (
+    <group position={[baseX, TRUCK.dropY, 0]}>
+      <mesh position={[0, TRUCK.baseplateH / 2, 0]}>
+        <boxGeometry args={[TRUCK.baseplateW, TRUCK.baseplateH, TRUCK.baseplateD]} />
+        <Mat paint={truckPaint} />
+      </mesh>
+      <mesh position={[0, -TRUCK.hangerH / 2, 0]}>
+        <boxGeometry args={[TRUCK.hangerW, TRUCK.hangerH, TRUCK.hangerD]} />
+        <Mat paint={truckPaint} />
+      </mesh>
+      <mesh position={[0, -TRUCK.hangerH, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[TRUCK.axleR, TRUCK.axleR, TRUCK.axleLen, 18]} />
+        <Mat paint={truckPaint} />
+      </mesh>
+      {[1, -1].map((sign) => (
+        <group
+          key={sign}
+          position={[0, -TRUCK.hangerH, sign * WHEEL_DIM.offsetZ]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <mesh>
+            <cylinderGeometry
+              args={[WHEEL_DIM.radius, WHEEL_DIM.radius, WHEEL_DIM.width, 28]}
+            />
+            <Mat paint={wheelPaint} />
+          </mesh>
+          <mesh>
+            <cylinderGeometry
+              args={[
+                WHEEL_DIM.bearingR,
+                WHEEL_DIM.bearingR,
+                WHEEL_DIM.bearingW,
+                16,
+              ]}
+            />
+            <meshStandardMaterial color="#1a1a22" metalness={0.85} roughness={0.3} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function RotatingDeck() {
+  const selection = useSceneStore((s) => s.selection);
+  const root = useRef<Group>(null);
+
+  const deckPaint = useMemo(() => DECK_MATERIALS[selection.deck], [selection.deck]);
+  const wheelPaint = useMemo(() => WHEEL_MATERIALS[selection.wheel], [selection.wheel]);
+  const truckPaint = useMemo(() => TRUCK_MATERIALS[selection.truck], [selection.truck]);
+  const gripPaint = useMemo(() => GRIP_MATERIALS[selection.grip], [selection.grip]);
+
+  useFrame((_, delta) => {
+    if (!root.current) return;
+    // Slow turntable on Y, gentle drift on X for life.
+    root.current.rotation.y += delta * 0.38;
+    const t = performance.now() * 0.001;
+    root.current.rotation.x = MathUtils.lerp(
+      root.current.rotation.x,
+      -0.16 + Math.sin(t * 0.6) * 0.04,
+      0.05,
+    );
+  });
+
+  return (
+    <group ref={root} rotation={[-0.18, 0, 0]} position={[0, 0.1, 0]}>
+      <RoundedBox
+        args={[DECK.length, DECK.thickness, DECK.width]}
+        radius={DECK.cornerRadius}
+        smoothness={4}
+        bevelSegments={3}
+      >
+        <Mat paint={deckPaint} />
+      </RoundedBox>
+      {deckPaint.accent && (
+        <mesh position={[0, -DECK.thickness / 2 - 0.001, 0]}>
+          <boxGeometry args={[DECK.length * 0.85, 0.005, DECK.width * 0.6]} />
+          <meshStandardMaterial
+            color={deckPaint.accent}
+            metalness={deckPaint.metalness * 0.5}
+            roughness={deckPaint.roughness}
+          />
+        </mesh>
+      )}
+      <RoundedBox
+        args={[DECK.length - GRIP.inset, GRIP.thickness, DECK.width - GRIP.inset]}
+        radius={DECK.cornerRadius * 0.85}
+        smoothness={3}
+        bevelSegments={2}
+        position={[0, DECK.thickness / 2 + GRIP.thickness / 2, 0]}
+      >
+        <Mat paint={gripPaint} />
+      </RoundedBox>
+      {gripPaint.accent && (
+        <mesh position={[0, DECK.thickness / 2 + GRIP.thickness + 0.001, 0]}>
+          <boxGeometry
+            args={[
+              (DECK.length - GRIP.inset) * 0.7,
+              0.003,
+              (DECK.width - GRIP.inset) * 0.18,
+            ]}
+          />
+          <meshStandardMaterial color={gripPaint.accent} />
+        </mesh>
+      )}
+      <Truck isFront truckPaint={truckPaint} wheelPaint={wheelPaint} />
+      <Truck isFront={false} truckPaint={truckPaint} wheelPaint={wheelPaint} />
+    </group>
+  );
+}
+
+interface OrderPreviewProps {
+  expanded: boolean;
+}
+
+export function OrderPreview({ expanded }: OrderPreviewProps) {
+  return (
+    <div className="relative h-full w-full">
+      <Canvas
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        camera={{ position: [0, 1.5, 7.4], fov: expanded ? 24 : 30, near: 0.1, far: 60 }}
+        // Always render; the rotation makes every frame meaningful.
+        frameloop="always"
+      >
+        <color attach="background" args={['#07070a']} />
+        <fog attach="fog" args={['#07070a', 9, 22]} />
+        <ambientLight intensity={0.45} />
+        <directionalLight
+          position={[3, 4, 4]}
+          intensity={0.9}
+          color="#ffe6c4"
+          castShadow={false}
+        />
+        <directionalLight
+          position={[-4, 2, -2]}
+          intensity={0.55}
+          color="#88a5d6"
+        />
+        <pointLight
+          position={[0, -1.6, 0]}
+          intensity={0.5}
+          color="#ff5b14"
+          distance={6}
+        />
+        <Suspense fallback={null}>
+          <RotatingDeck />
+          <ContactShadows
+            position={[0, -0.65, 0]}
+            opacity={0.55}
+            scale={9}
+            blur={2.4}
+            far={3}
+            color="#000000"
+          />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}

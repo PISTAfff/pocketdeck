@@ -1,30 +1,30 @@
 'use client';
 
 /**
- * Order, the checkout form. Submits via Axios to POST /api/orders with the
- * current selection (from the scene store). Maps 422 errors[].field (dot
- * path like "customer.phone") onto the corresponding inline error.
+ * Order ("Review & Buy") section.
  *
- * Wave 7 changes:
- *   - Sentence-case labels (#39)
- *   - Spec'd inputs in OrderFields.tsx (#40)
- *   - Live submit button: always clickable. Pressing while invalid runs
- *     local validation and surfaces inline errors. Once valid the label
- *     reads "Confirm order" (#41).
- *   - Address counter (#42)
- *   - Softer helper copy (#43)
- *   - Full-section success state with SKU, total, and ETA (#44)
- *   - Summary card top margin aligns with the first input baseline (#38)
+ * New in this wave:
+ *   - Rotating-deck preview panel at the top. Click "Expand" or the
+ *     preview itself to grow it to fullscreen. All other DOM content
+ *     fades out and a fixed Back button collapses it again.
+ *   - Governorate uses CustomSelect for a dark-themed dropdown (the old
+ *     native <select> rendered with OS chrome that clashed with the
+ *     rest of the form).
+ *   - Form keeps Wave 7 behavior: sentence-case labels, spec'd inputs,
+ *     live submit, address counter, friendlier helpers, success state.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type { CreateOrderRequest, Governorate, Order } from '@pocketdeck/types';
 import { useSceneStore } from '@/store/scene';
 import { useConfiguratorStore } from '@/store/configurator';
 import { createOrder } from '@/lib/api';
 import { MagneticButton } from '@/components/ui/MagneticButton';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 import { GOVERNORATES } from './governorates';
-import { Field, FieldError, fieldBase } from './OrderFields';
+import { Field, FieldError } from './OrderFields';
 import { OrderSummary } from './OrderSummary';
+import { OrderPreview } from './OrderPreview';
 import {
   handleSubmitError,
   type FieldErrors,
@@ -83,6 +83,7 @@ export function OrderSection() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [status, setStatus] = useState<OrderStatus>({ kind: 'idle' });
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
 
   const validation = useMemo(() => validate(form), [form]);
   const ready = validation.ok;
@@ -105,6 +106,22 @@ export function OrderSection() {
     return () => observer.disconnect();
   }, [setActiveSection]);
 
+  // Esc closes the fullscreen preview. Lock body scroll while expanded
+  // so the user can't accidentally scroll the page underneath.
+  useEffect(() => {
+    if (!previewExpanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [previewExpanded]);
+
   const onChange = <K extends keyof CustomerForm>(key: K, value: CustomerForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[`customer.${key}`]) {
@@ -124,7 +141,6 @@ export function OrderSection() {
     const result = validate(form);
     if (!result.ok) {
       setErrors(result.errors);
-      // Focus the first invalid field for keyboard users.
       const firstKey = Object.keys(result.errors)[0];
       if (firstKey) {
         const idPart = firstKey.split('.')[1];
@@ -157,13 +173,8 @@ export function OrderSection() {
     }
   };
 
-  // Show errors only after the first submit attempt (or after the server
-  // returns 422). Otherwise the form would scream at users as they type.
   const visibleErrors = submitAttempted ? errors : {};
 
-  // #38: align summary card top with first input baseline. The form's
-  // first input sits below its sentence-case label (~22 px label + 8 px gap
-  // = 30 px total). We push the aside down by `mt-[30px]` to match.
   return (
     <section
       ref={sectionRef}
@@ -173,138 +184,227 @@ export function OrderSection() {
       {status.kind === 'success' ? (
         <OrderSuccess order={status.order} totalLabel={summaryTotal(product, selection)} />
       ) : (
-        <div className="mx-auto grid max-w-[1400px] gap-12 md:grid-cols-[0.85fr_1fr] md:gap-20">
-          <aside className="md:mt-[30px]">
-            <OrderSummary
-              productSlug={PRODUCT_SLUG}
-              selection={selection}
-              product={product}
-            />
-          </aside>
+        <div className="mx-auto max-w-[1400px]">
+          {/* "Review & Buy" header */}
+          <header className="mb-12 max-w-2xl">
+            <span className="tape inline-block">05 · review &amp; buy</span>
+            <h2
+              className="display-headline mt-6 text-bone-50"
+              style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
+            >
+              Review,
+              <br />
+              <span className="spray-text text-ember-500">then ship it.</span>
+            </h2>
+            <p
+              className="mt-5 max-w-md font-sans text-base text-bone-50"
+              style={{ lineHeight: 'var(--leading-body)' }}
+            >
+              Spin the build to give it a last look. Expand the preview if
+              you want it big. Then drop your details below.
+            </p>
+          </header>
 
-          <form
-            onSubmit={onSubmit}
-            className="flex flex-col gap-6"
-            noValidate
-            aria-busy={status.kind === 'submitting'}
+          {/* Preview + summary + form layout */}
+          <div
+            className="grid gap-12 transition-opacity duration-500 md:grid-cols-[0.85fr_1fr] md:gap-20"
+            style={{
+              opacity: previewExpanded ? 0 : 1,
+              pointerEvents: previewExpanded ? 'none' : 'auto',
+            }}
           >
-            <Field
-              id="name"
-              label="Name"
-              value={form.name}
-              onChange={(v) => onChange('name', v)}
-              error={visibleErrors['customer.name']}
-              placeholder="Your full name"
-              autoComplete="name"
-            />
-            <Field
-              id="phone"
-              label="Phone"
-              value={form.phone}
-              onChange={(v) => onChange('phone', v)}
-              error={visibleErrors['customer.phone']}
-              placeholder="01XXXXXXXXX"
-              helper="Egyptian mobile, 11 digits starting with 01."
-              inputMode="tel"
-              autoComplete="tel"
-            />
-            <Field
-              id="address"
-              label="Address"
-              value={form.address}
-              onChange={(v) => onChange('address', v)}
-              error={visibleErrors['customer.address']}
-              placeholder="Street, building, apartment"
-              helper="Where should the courier drop it off?"
-              autoComplete="street-address"
-              multiline
-              counter={{ current: form.address.length, max: ADDRESS_MAX }}
-            />
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="governorate"
-                className="font-sans text-sm font-medium text-bone-50"
+            <aside className="flex flex-col gap-6">
+              {/* Rotating preview, collapsed state */}
+              <button
+                type="button"
+                onClick={() => setPreviewExpanded(true)}
+                data-cursor="link"
+                aria-label="Expand the build preview to fullscreen"
+                className="group relative overflow-hidden rounded-2xl border border-bone-50/10 text-left transition-shadow hover:shadow-[0_22px_60px_-18px_rgba(255,91,20,0.35)]"
+                style={{
+                  background: 'rgba(245, 245, 240, 0.04)',
+                  height: '320px',
+                }}
               >
-                Governorate
-              </label>
-              <div className="relative">
-                <select
-                  id="governorate"
-                  value={form.governorate}
-                  onChange={(e) => onChange('governorate', e.target.value as Governorate)}
-                  data-cursor="link"
-                  aria-invalid={Boolean(visibleErrors['customer.governorate'])}
-                  className={`${fieldBase} appearance-none pr-12`}
-                >
-                  <option value="" disabled className="bg-ink-900 text-bone-300">
-                    Select your governorate
-                  </option>
-                  {GOVERNORATES.map((g) => (
-                    <option key={g} value={g} className="bg-ink-900 text-bone-50">
-                      {g}
-                    </option>
-                  ))}
-                </select>
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute top-1/2 right-5 -translate-y-1/2 text-bone-300"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <OrderPreview expanded={false} />
+                <span className="pointer-events-none absolute right-4 bottom-4 inline-flex items-center gap-2 rounded-full bg-ink-950/80 px-3 py-1.5 font-mono text-[10px] tracking-[0.28em] text-bone-100 uppercase ring-1 ring-bone-50/15 backdrop-blur transition-colors group-hover:bg-ember-500 group-hover:text-ink-950">
+                  Expand
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path
-                      d="M3 5 L7 9 L11 5"
+                      d="M2 2 L5 2 M2 2 L2 5 M10 10 L7 10 M10 10 L10 7"
                       stroke="currentColor"
-                      strokeWidth="1.5"
+                      strokeWidth="1.6"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
                     />
                   </svg>
                 </span>
+                <span className="pointer-events-none absolute top-4 left-4 inline-block font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase">
+                  Live preview · auto-rotate
+                </span>
+              </button>
+
+              <OrderSummary
+                productSlug={PRODUCT_SLUG}
+                selection={selection}
+                product={product}
+              />
+            </aside>
+
+            <form
+              onSubmit={onSubmit}
+              className="flex flex-col gap-6"
+              noValidate
+              aria-busy={status.kind === 'submitting'}
+            >
+              <Field
+                id="name"
+                label="Name"
+                value={form.name}
+                onChange={(v) => onChange('name', v)}
+                error={visibleErrors['customer.name']}
+                placeholder="Your full name"
+                autoComplete="name"
+              />
+              <Field
+                id="phone"
+                label="Phone"
+                value={form.phone}
+                onChange={(v) => onChange('phone', v)}
+                error={visibleErrors['customer.phone']}
+                placeholder="01XXXXXXXXX"
+                helper="Egyptian mobile, 11 digits starting with 01."
+                inputMode="tel"
+                autoComplete="tel"
+              />
+              <Field
+                id="address"
+                label="Address"
+                value={form.address}
+                onChange={(v) => onChange('address', v)}
+                error={visibleErrors['customer.address']}
+                placeholder="Street, building, apartment"
+                helper="Where should the courier drop it off?"
+                autoComplete="street-address"
+                multiline
+                counter={{ current: form.address.length, max: ADDRESS_MAX }}
+              />
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="governorate"
+                  className="font-sans text-sm font-medium text-bone-50"
+                >
+                  Governorate
+                </label>
+                <CustomSelect<Governorate>
+                  id="governorate"
+                  value={form.governorate as Governorate | ''}
+                  options={GOVERNORATES}
+                  placeholder="Select your governorate"
+                  invalid={Boolean(visibleErrors['customer.governorate'])}
+                  ariaLabel="Governorate"
+                  onChange={(v) => onChange('governorate', v)}
+                />
+                <div className="min-h-[18px]">
+                  {visibleErrors['customer.governorate'] ? (
+                    <FieldError message={visibleErrors['customer.governorate']} />
+                  ) : (
+                    <p
+                      className="font-sans text-[12px] text-bone-300"
+                      style={{ lineHeight: 'var(--leading-caption)' }}
+                    >
+                      Cairo, Giza, and Alexandria ship next day.
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="min-h-[18px]">
-                {visibleErrors['customer.governorate'] ? (
-                  <FieldError message={visibleErrors['customer.governorate']} />
-                ) : (
+
+              <div className="mt-4 flex flex-col items-start gap-4 border-t border-bone-50/10 pt-6">
+                <MagneticButton
+                  type="submit"
+                  disabled={status.kind === 'submitting'}
+                  innerClassName="rounded-full bg-ember-500 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400 disabled:opacity-60"
+                >
+                  {status.kind === 'submitting' ? 'Placing order...' : 'Confirm order'}
+                </MagneticButton>
+                {status.kind === 'error' && (
+                  <p role="alert" className="font-sans text-[12px] text-red-400">
+                    {status.message}
+                  </p>
+                )}
+                {!ready && submitAttempted && (
                   <p
+                    role="status"
                     className="font-sans text-[12px] text-bone-300"
                     style={{ lineHeight: 'var(--leading-caption)' }}
                   >
-                    Cairo, Giza, and Alexandria ship next day.
+                    Sort the highlighted fields above to continue.
                   </p>
                 )}
               </div>
-            </div>
-
-            <div className="mt-4 flex flex-col items-start gap-4 border-t border-bone-50/10 pt-6">
-              <MagneticButton
-                type="submit"
-                disabled={status.kind === 'submitting'}
-                innerClassName="rounded-full bg-ember-500 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400 disabled:opacity-60"
-              >
-                {status.kind === 'submitting' ? 'Placing order...' : 'Confirm order'}
-              </MagneticButton>
-              {status.kind === 'error' && (
-                <p role="alert" className="font-sans text-[12px] text-red-400">
-                  {status.message}
-                </p>
-              )}
-              {!ready && submitAttempted && (
-                <p
-                  role="status"
-                  className="font-sans text-[12px] text-bone-300"
-                  style={{ lineHeight: 'var(--leading-caption)' }}
-                >
-                  Sort the highlighted fields above to continue.
-                </p>
-              )}
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
+
+      {/* Fullscreen preview overlay */}
+      <AnimatePresence>
+        {previewExpanded && (
+          <motion.div
+            key="preview-overlay"
+            className="fixed inset-0 z-[80] bg-ink-950"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45, ease: [0.65, 0, 0.35, 1] }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ duration: 0.5, ease: [0.65, 0, 0.35, 1] }}
+              className="absolute inset-0"
+            >
+              <OrderPreview expanded />
+            </motion.div>
+            <motion.button
+              type="button"
+              onClick={() => setPreviewExpanded(false)}
+              data-cursor="link"
+              aria-label="Close fullscreen preview and return"
+              initial={{ y: -16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1, transition: { delay: 0.2 } }}
+              exit={{ y: -16, opacity: 0 }}
+              className="absolute top-6 left-6 z-10 inline-flex items-center gap-3 rounded-full bg-ink-900/70 px-5 py-3 font-mono text-xs tracking-[0.28em] text-bone-50 uppercase ring-1 ring-bone-50/15 backdrop-blur-xl transition-colors hover:bg-ink-900 md:top-10 md:left-10"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M9 3 L5 7 L9 11"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Back
+            </motion.button>
+            {/* Bottom-right meta */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.35 } }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-none absolute right-6 bottom-6 hidden font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase md:right-10 md:bottom-10 md:block"
+            >
+              <span className="text-bone-100">Your build · </span>
+              {selection.deck} / {selection.wheel} / {selection.truck} / {selection.grip}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
 
-/** Full-section confirmation rendered after a successful POST (#44). */
+/** Confirmation state. */
 function OrderSuccess({
   order,
   totalLabel,
