@@ -120,59 +120,66 @@ const DECK_KEYFRAMES: Record<SectionId, DeckKeyframe> = {
 
 /**
  * Per-anatomy-part overrides. Each step in the anatomy scroll-pin moves the
- * camera + deck into a pose that features that part. Bearings share the wheel
- * pose since they live inside the wheels.
+ * camera + deck into a pose that features that part without the chaos of
+ * exploded geometry.
+ *
+ * The deck position stays world-space upper-right while the camera looks at
+ * (or just-past) the world origin, so the deck reads as the right-column
+ * subject of the shot and the headline / part copy on the left half of the
+ * page never collides with it. Scale stays small (0.42 to 0.5) so the model
+ * fits comfortably inside the right column.
  */
 const ANATOMY_CAMERA: Record<DeckPart, CameraKeyframe> = {
   deck: {
-    // High angle looking down on the deck plate.
-    position: [-0.6, 4.0, 5.2],
-    target: [1.6, 0, 0],
-    fov: 28,
+    // Looking down from above with a slight forward tilt; deck reads flat.
+    position: [-0.4, 3.6, 4.6],
+    target: [0.2, 0.1, 0],
+    fov: 26,
   },
   truck: {
-    // Eye-level from the left, low angle to feature the trucks underneath.
-    position: [-2.5, 0.4, 4.5],
-    target: [1.6, -0.4, 0],
-    fov: 26,
-  },
-  wheel: {
-    // Close in from the side so a wheel is prominent.
-    position: [-1.6, 0.2, 3.6],
-    target: [2.4, -0.2, 0.4],
+    // Low side-on so the trucks underneath the board face the camera.
+    position: [-2.4, 0.4, 3.8],
+    target: [0.3, -0.1, 0],
     fov: 24,
   },
+  wheel: {
+    // Pulled in close, deck angled so a wheel pair leads the frame.
+    position: [-1.3, 0.4, 3.0],
+    target: [0.5, 0, 0],
+    fov: 22,
+  },
   grip: {
-    // Top-down centered on the grip-tape stripe.
-    position: [-0.2, 4.6, 3.6],
-    target: [1.6, 0, 0],
-    fov: 26,
+    // Pure top-down on the grip stripe.
+    position: [0.1, 4.2, 3.4],
+    target: [0.2, 0, 0],
+    fov: 24,
   },
 };
 
 const ANATOMY_DECK: Record<DeckPart, DeckKeyframe> = {
   deck: {
-    position: [1.6, 0, 0],
-    rotation: [-Math.PI / 2 + 0.18, 0, 0],
-    scale: 0.78,
+    // Flat board, slightly tilted so the corner catches light.
+    position: [1.5, 0, 0],
+    rotation: [-Math.PI / 2 + 0.12, 0, 0],
+    scale: 0.46,
   },
   truck: {
-    // Tilt up so the underside / trucks face the camera.
-    position: [1.6, 0, 0],
-    rotation: [-0.35, 0.05, 0],
-    scale: 0.8,
+    // Pitched up so the underside (trucks) faces the camera.
+    position: [1.5, 0, 0],
+    rotation: [-0.42, 0.12, 0],
+    scale: 0.5,
   },
   wheel: {
-    // Rotate so a wheel pair leads. Slightly canted on Z for dynamic feel.
-    position: [1.6, 0, 0],
-    rotation: [-0.25, 0.6, 0.05],
-    scale: 0.82,
+    // Rotated so a wheel pair leads, slight Z cant for dynamic feel.
+    position: [1.5, 0, 0],
+    rotation: [-0.2, 0.55, 0.04],
+    scale: 0.5,
   },
   grip: {
-    // Pure top-down; the grip is the top surface of the deck.
-    position: [1.6, 0, 0],
+    // Pure top-down: the grip stripe is the subject.
+    position: [1.5, 0, 0],
     rotation: [-Math.PI / 2, 0, 0],
-    scale: 0.78,
+    scale: 0.46,
   },
 };
 

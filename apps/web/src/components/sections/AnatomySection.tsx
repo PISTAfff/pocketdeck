@@ -110,18 +110,19 @@ export function AnatomySection() {
           },
           onEnter: () => {
             setActiveSection('anatomy');
-            setExploded(true);
+            // Keep the deck assembled. Explosion in anatomy was sending
+            // parts across the viewport and colliding with text; the
+            // per-part camera + dimming carries the story instead.
+            setExploded(false);
           },
           onEnterBack: () => {
             setActiveSection('anatomy');
-            setExploded(true);
+            setExploded(false);
           },
           onLeave: () => {
-            setExploded(false);
             setHighlightPart(null);
           },
           onLeaveBack: () => {
-            setExploded(false);
             setHighlightPart(null);
           },
           onUpdate: (self) => {
