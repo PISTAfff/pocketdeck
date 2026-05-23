@@ -246,22 +246,20 @@ export function ConfiguratorSection() {
     >
       <div
         ref={stageRef}
-        // py-24 was eating too much vertical space and pushing the footer
-        // (Back + Buy now) off-screen on the review step. Tightened to
-        // accommodate nav clearance + a comfortable footer bottom margin.
-        className="hidden min-h-screen flex-col px-6 pt-24 pb-8 sm:px-10 md:flex md:px-14"
+        // `relative` so the absolute-positioned footer below anchors to
+        // this stage. Bottom padding accounts for the footer's height so
+        // body content never sits under it.
+        className="relative hidden min-h-screen flex-col px-6 pt-24 pb-32 sm:px-10 md:flex md:px-14"
       >
         <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col">
           {/* Header. All copy + step rail live in the LEFT column so the
-              right column stays empty for the 3D deck (#step-counter bleed
-              fix: the rail used to sit in the right column and was getting
-              clipped by the deck plate). */}
+              right column stays empty for the 3D deck. */}
           <header className="grid items-start gap-8 md:grid-cols-[1.05fr_1fr]">
             <div className="text-tint">
               <span className="tape inline-block">03 · configure</span>
               <h2
                 className="display-headline mt-6 text-bone-50"
-                style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)' }}
+                style={{ fontSize: 'clamp(2.25rem, 5vw, 4rem)' }}
               >
                 Build yours,
                 <br />
@@ -272,20 +270,14 @@ export function ConfiguratorSection() {
                 through the four axes. The deck on the right relights the
                 active part on every step.
               </p>
-              <div className="mt-8 max-w-md">
+              <div className="mt-6 max-w-md">
                 <StepRail step={step} onJump={(target) => goToStep(target)} align="start" />
               </div>
             </div>
-            {/* Right column reserved for the 3D deck. */}
             <div aria-hidden className="hidden md:block" />
           </header>
 
-          {/* Two-column body: wizard card on the LEFT, deck reserved area on the RIGHT.
-              `min-h-0` lets the grid shrink so the footer below it (Back +
-              Buy now) is always pinned at the bottom of the viewport. If the
-              review card is taller than the available space, the LEFT column
-              scrolls internally with our custom dark scrollbar. */}
-          <div className="mt-10 grid min-h-0 flex-1 grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-12 overflow-y-auto">
+          <div className="mt-8 grid min-h-0 flex-1 grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] gap-12 overflow-y-auto pr-2">
             <div className="flex flex-col gap-6">
               <AnimatePresence mode="wait">
                 {step < 4 ? (
@@ -313,57 +305,54 @@ export function ConfiguratorSection() {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Right column reserved for the deck. Canvas keyframe puts the
-                deck in this region while the user is in configurator. */}
             <div aria-hidden className="hidden md:block" />
           </div>
-
-          {/* Bottom row: controls. Back and Next are visually equal in
-              weight, size, padding, and radius (#28). Back is a dark-grey
-              filled secondary; the primary action gets ember. */}
-          <footer className="mt-10 flex items-center justify-between border-t border-bone-50/10 pt-6">
-            <button
-              type="button"
-              onClick={() => goToStep(Math.max(0, step - 1) as WizardStep)}
-              disabled={step === 0}
-              data-cursor="link"
-              className="rounded-full bg-ink-700 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-bone-50 uppercase transition-colors hover:bg-ink-600 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              ← Back
-            </button>
-
-            <div className="hidden font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase md:block">
-              {step < 4
-                ? 'Click Next to lock in this axis'
-                : 'Final build · ready to ship'}
-            </div>
-
-            {step < 4 ? (
-              <MagneticButton
-                type="button"
-                onClick={() => goToStep((step + 1) as WizardStep)}
-                innerClassName="rounded-full bg-ember-500 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400"
-              >
-                Next →
-              </MagneticButton>
-            ) : (
-              <MagneticButton
-                type="button"
-                onClick={() => scrollToHash('#order')}
-                disabled={stockInfo !== null && !stockInfo.inStock}
-                innerClassName={clsx(
-                  'rounded-full px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] uppercase transition-colors',
-                  stockInfo === null || stockInfo.inStock
-                    ? 'bg-ember-500 text-ink-950 shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_22px_60px_-12px_rgba(255,91,20,0.65)] hover:bg-ember-400'
-                    : 'cursor-not-allowed bg-bone-50/10 text-bone-300',
-                )}
-              >
-                {stockInfo && !stockInfo.inStock ? 'Out of stock' : 'Buy now →'}
-              </MagneticButton>
-            )}
-          </footer>
         </div>
+
+        {/* Footer pinned to the bottom of the pinned stage so Back +
+            Buy now are always in view, regardless of how tall the review
+            card grows. */}
+        <footer className="absolute right-0 bottom-8 left-0 mx-auto flex w-full max-w-[1400px] items-center justify-between border-t border-bone-50/10 px-6 pt-5 sm:px-10 md:px-14">
+          <button
+            type="button"
+            onClick={() => goToStep(Math.max(0, step - 1) as WizardStep)}
+            disabled={step === 0}
+            data-cursor="link"
+            className="rounded-full bg-ink-700 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-bone-50 uppercase transition-colors hover:bg-ink-600 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            ← Back
+          </button>
+
+          <div className="hidden font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase md:block">
+            {step < 4
+              ? 'Click Next to lock in this axis'
+              : 'Final build · ready to ship'}
+          </div>
+
+          {step < 4 ? (
+            <MagneticButton
+              type="button"
+              onClick={() => goToStep((step + 1) as WizardStep)}
+              innerClassName="rounded-full bg-ember-500 px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] text-ink-950 uppercase shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_18px_50px_-12px_rgba(255,91,20,0.55)] transition-colors hover:bg-ember-400"
+            >
+              Next →
+            </MagneticButton>
+          ) : (
+            <MagneticButton
+              type="button"
+              onClick={() => scrollToHash('#order')}
+              disabled={stockInfo !== null && !stockInfo.inStock}
+              innerClassName={clsx(
+                'rounded-full px-10 py-4 font-mono text-sm font-medium tracking-[0.24em] uppercase transition-colors',
+                stockInfo === null || stockInfo.inStock
+                  ? 'bg-ember-500 text-ink-950 shadow-[0_0_0_1px_rgba(255,91,20,0.4),0_22px_60px_-12px_rgba(255,91,20,0.65)] hover:bg-ember-400'
+                  : 'cursor-not-allowed bg-bone-50/10 text-bone-300',
+              )}
+            >
+              {stockInfo && !stockInfo.inStock ? 'Out of stock' : 'Buy now →'}
+            </MagneticButton>
+          )}
+        </footer>
       </div>
 
       {/* Mobile fallback, click-driven, no pin. */}
@@ -683,12 +672,12 @@ function ReviewCard({
       style={{
         background: 'rgba(245, 245, 240, 0.04)',
         border: '1px solid rgba(245, 245, 240, 0.08)',
-        padding: '24px',
+        padding: '20px',
       }}
     >
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-3">
         <p className="font-mono text-[11px] tracking-[0.32em] text-ember-400 uppercase">
-          Your build
+          Your build · review
         </p>
         {stockInfo && (
           <span
@@ -704,18 +693,11 @@ function ReviewCard({
         )}
       </div>
 
-      <h3
-        className="mt-3 font-display font-normal tracking-[-0.005em] text-bone-50"
-        style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', lineHeight: 0.9 }}
-      >
-        PocketDeck assembled.
-      </h3>
-
-      <dl className="mt-6 divide-y divide-bone-50/10 border-y border-bone-50/10">
+      <dl className="mt-4 divide-y divide-bone-50/10 border-y border-bone-50/10">
         {breakdown.map((row) => (
           <div
             key={row.axis}
-            className="flex items-center justify-between gap-4 py-3 font-mono text-sm text-bone-100"
+            className="flex items-center justify-between gap-4 py-2.5 font-mono text-sm text-bone-100"
           >
             <dt className="text-[11px] tracking-[0.28em] text-bone-300 uppercase">
               {row.axis}
@@ -735,13 +717,13 @@ function ReviewCard({
         ))}
       </dl>
 
-      <div className="mt-6 flex items-baseline justify-between">
+      <div className="mt-4 flex items-baseline justify-between">
         <span className="font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase">
           Total
         </span>
         <span
           className="font-display text-bone-50"
-          style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', lineHeight: 0.9 }}
+          style={{ fontSize: 'clamp(1.75rem, 3.2vw, 2.5rem)', lineHeight: 0.9 }}
         >
           {price !== null ? formatEGP(price) : '—'}
         </span>
