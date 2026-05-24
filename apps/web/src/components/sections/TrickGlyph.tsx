@@ -1,37 +1,26 @@
 'use client';
 
 /**
- * TrickGlyph, per-trick motion illustrations.
+ * TrickGlyph, placeholder skateboard illustration for the tricks grid.
  *
- * Each glyph is a simple SVG that visually telegraphs the trick: the path
- * the board takes, a rotation arrow, or the rail line for a grind. They
- * make every tile distinguishable at a glance even without real clip footage.
+ * Previously this dispatched to per-trick motion drawings (arcs, rotation
+ * arrows, etc.) but they read as a tangle of lines instead of a recognisable
+ * object. Until real trick clips are wired in, every tile shares the same
+ * clean side-view skateboard so the grid feels intentional rather than
+ * abstract. The `id` prop is kept so callers don't have to change shape —
+ * we just ignore it for now.
  *
- * The strokes use `currentColor` so the parent decides intensity (we fade
- * them up on hover from 30% to 55% of bone-50).
+ * Strokes use `currentColor` so the parent controls intensity (fades from
+ * 30% to 55% of bone-50 on hover).
  */
 interface TrickGlyphProps {
-  id: string;
+  /** Trick id. Currently ignored — every tile renders the same skateboard. */
+  id?: string;
   className?: string;
 }
 
-export function TrickGlyph({ id, className }: TrickGlyphProps) {
-  switch (id) {
-    case 'ollie':
-      return <Ollie className={className} />;
-    case 'kickflip':
-      return <Kickflip className={className} />;
-    case 'heelflip':
-      return <Heelflip className={className} />;
-    case 'shuvit':
-      return <Shuvit className={className} />;
-    case 'manual':
-      return <Manual className={className} />;
-    case 'grind':
-      return <Grind className={className} />;
-    default:
-      return null;
-  }
+export function TrickGlyph({ className }: TrickGlyphProps) {
+  return <Skateboard className={className} />;
 }
 
 const stroke = {
@@ -42,7 +31,7 @@ const stroke = {
   strokeLinejoin: 'round' as const,
 };
 
-function Frame({ children, className }: { children: React.ReactNode; className?: string }) {
+function Skateboard({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 120 120"
@@ -50,103 +39,98 @@ function Frame({ children, className }: { children: React.ReactNode; className?:
       className={className}
       aria-hidden
     >
-      {children}
+      {/* Ground line — dashed so it reads as a surface, not part of the
+          board. Sits slightly below the wheels. */}
+      <line
+        x1={10}
+        y1={92}
+        x2={110}
+        y2={92}
+        {...stroke}
+        strokeDasharray="2 4"
+        opacity={0.4}
+      />
+
+      {/* Deck silhouette: a long bar with upturned kicks at each end. The
+          two control points pull the corners up so the ends curve into
+          tails instead of stopping flat. */}
+      <path
+        d="M 10 64
+           C 8 56 14 53 22 53
+           L 98 53
+           C 106 53 112 56 110 64
+           C 109 70 102 71 96 70
+           L 24 70
+           C 18 71 11 70 10 64
+           Z"
+        fill="currentColor"
+        fillOpacity={0.16}
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+      />
+
+      {/* Top grip-line, hints at the textured top surface of the deck. */}
+      <path
+        d="M 24 54.5 Q 60 56 96 54.5"
+        stroke="currentColor"
+        strokeWidth={1}
+        strokeOpacity={0.55}
+        fill="none"
+      />
+
+      {/* Kingpin pillars (the part of the truck that drops from the deck
+          underside down to the axle). */}
+      <line x1={32} y1={70} x2={32} y2={76} {...stroke} />
+      <line x1={88} y1={70} x2={88} y2={76} {...stroke} />
+
+      {/* Axle hangers, the cross-bars the wheels mount to. */}
+      <line x1={22} y1={76} x2={42} y2={76} {...stroke} />
+      <line x1={78} y1={76} x2={98} y2={76} {...stroke} />
+
+      {/* Wheels — 3/4-style with both wheels per truck visible (front +
+          back) so the board reads as a skateboard, not a longboard with
+          two wheels. */}
+      <ellipse
+        cx={26}
+        cy={83}
+        rx={4.5}
+        ry={5.5}
+        fill="currentColor"
+        fillOpacity={0.35}
+        stroke="currentColor"
+        strokeWidth={1.4}
+      />
+      <ellipse
+        cx={38}
+        cy={83}
+        rx={4.5}
+        ry={5.5}
+        fill="currentColor"
+        fillOpacity={0.35}
+        stroke="currentColor"
+        strokeWidth={1.4}
+      />
+      <ellipse
+        cx={82}
+        cy={83}
+        rx={4.5}
+        ry={5.5}
+        fill="currentColor"
+        fillOpacity={0.35}
+        stroke="currentColor"
+        strokeWidth={1.4}
+      />
+      <ellipse
+        cx={94}
+        cy={83}
+        rx={4.5}
+        ry={5.5}
+        fill="currentColor"
+        fillOpacity={0.35}
+        stroke="currentColor"
+        strokeWidth={1.4}
+      />
     </svg>
-  );
-}
-
-function Board({ x = 30, y = 80, w = 60, rot = 0 }: { x?: number; y?: number; w?: number; rot?: number }) {
-  return (
-    <g transform={`translate(${x} ${y}) rotate(${rot})`}>
-      <rect x={0} y={-3} width={w} height={6} rx={3} {...stroke} />
-      <circle cx={8} cy={6} r={2.5} {...stroke} />
-      <circle cx={w - 8} cy={6} r={2.5} {...stroke} />
-    </g>
-  );
-}
-
-function Ollie({ className }: { className?: string }) {
-  return (
-    <Frame className={className}>
-      {/* Arc trajectory */}
-      <path d="M 14 92 Q 60 14 106 92" {...stroke} strokeDasharray="3 5" />
-      {/* Board at apex */}
-      <Board x={45} y={36} rot={-3} />
-      {/* Take-off and landing markers */}
-      <line x1={14} y1={96} x2={14} y2={104} {...stroke} />
-      <line x1={106} y1={96} x2={106} y2={104} {...stroke} />
-    </Frame>
-  );
-}
-
-function Kickflip({ className }: { className?: string }) {
-  return (
-    <Frame className={className}>
-      <path d="M 12 92 Q 60 18 108 92" {...stroke} strokeDasharray="3 5" />
-      {/* Flipping board frames */}
-      <Board x={42} y={38} rot={-15} />
-      <Board x={42} y={56} rot={180} />
-      <Board x={42} y={74} rot={-345} />
-      {/* Rotation arrow */}
-      <path d="M 90 22 Q 100 30 95 42" {...stroke} />
-      <polygon points="90,42 95,48 99,40" fill="currentColor" />
-    </Frame>
-  );
-}
-
-function Heelflip({ className }: { className?: string }) {
-  return (
-    <Frame className={className}>
-      <path d="M 12 92 Q 60 18 108 92" {...stroke} strokeDasharray="3 5" />
-      <Board x={42} y={40} rot={15} />
-      <Board x={42} y={58} rot={-160} />
-      <Board x={42} y={76} rot={345} />
-      <path d="M 30 22 Q 20 30 25 42" {...stroke} />
-      <polygon points="30,42 25,48 21,40" fill="currentColor" />
-    </Frame>
-  );
-}
-
-function Shuvit({ className }: { className?: string }) {
-  return (
-    <Frame className={className}>
-      {/* Horizontal rotation viewed from above: ellipse with arrowhead */}
-      <ellipse cx={60} cy={60} rx={40} ry={22} {...stroke} strokeDasharray="3 5" />
-      <Board x={30} y={60} rot={0} />
-      <Board x={28} y={58} rot={90} w={20} />
-      <polygon points="100,60 92,55 92,65" fill="currentColor" />
-    </Frame>
-  );
-}
-
-function Manual({ className }: { className?: string }) {
-  return (
-    <Frame className={className}>
-      {/* Tilted board on two wheels */}
-      <line x1={18} y1={90} x2={104} y2={90} {...stroke} strokeDasharray="3 4" />
-      <g transform="translate(34 70) rotate(-22)">
-        <rect x={0} y={-3} width={56} height={6} rx={3} {...stroke} />
-        <circle cx={48} cy={6} r={3.4} {...stroke} />
-      </g>
-      {/* Wobble arc */}
-      <path d="M 30 56 Q 60 50 90 60" {...stroke} strokeDasharray="2 4" />
-    </Frame>
-  );
-}
-
-function Grind({ className }: { className?: string }) {
-  return (
-    <Frame className={className}>
-      {/* Rail line */}
-      <line x1={10} y1={84} x2={110} y2={84} {...stroke} />
-      {/* Board on rail at an angle */}
-      <g transform="translate(34 68) rotate(-4)">
-        <rect x={0} y={-3} width={52} height={6} rx={3} {...stroke} />
-        <circle cx={8} cy={6} r={2.5} {...stroke} />
-        <circle cx={44} cy={6} r={2.5} {...stroke} />
-      </g>
-      {/* Spark marks */}
-      <path d="M 92 84 l 6 -8 M 96 84 l 4 -10 M 100 84 l 6 -6" {...stroke} />
-    </Frame>
   );
 }

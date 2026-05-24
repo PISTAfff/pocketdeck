@@ -18,8 +18,8 @@
  * dimension constants and material maps, but no exploded-view / no
  * keyframe-driven motion / no part dimming.
  */
-import { Suspense, useMemo, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import {
   ContactShadows,
   OrbitControls,
@@ -29,6 +29,7 @@ import {
   CanvasTexture,
   Group,
   MathUtils,
+  type PerspectiveCamera,
   RepeatWrapping,
   Shape,
   SRGBColorSpace,
@@ -422,7 +423,52 @@ interface OrderPreviewProps {
   expanded: boolean;
 }
 
+/**
+ * Reactive camera sync — Canvas's `camera` prop only seeds the camera at
+ * mount, so it can't respond to viewport changes mid-session. This child
+ * lives inside the Canvas, reads the actual camera via useThree, and
+ * writes fov / position whenever the inputs change. Used to pull the
+ * camera back + widen the fov in the expanded preview on narrow viewports
+ * where the deck would otherwise be cropped or sit huge in the frame.
+ */
+function ResponsiveCamera({
+  expanded,
+  narrow,
+}: {
+  expanded: boolean;
+  narrow: boolean;
+}) {
+  const camera = useThree((s) => s.camera) as PerspectiveCamera;
+  useEffect(() => {
+    if (expanded && narrow) {
+      camera.position.set(0, 1.9, 9.4);
+      camera.fov = 38;
+    } else if (expanded) {
+      camera.position.set(0, 1.5, 7.4);
+      camera.fov = 26;
+    } else {
+      camera.position.set(0, 1.5, 7.4);
+      camera.fov = 30;
+    }
+    camera.updateProjectionMatrix();
+  }, [camera, expanded, narrow]);
+  return null;
+}
+
 export function OrderPreview({ expanded }: OrderPreviewProps) {
+  // Narrow viewport check — used to pick a wider FOV + pulled-back camera
+  // for the expanded preview on phones. Read on mount, then track resizes
+  // (a phone rotation flips landscape/portrait and we want the deck to
+  // re-fit). Pre-mount the value is `false`, which matches the desktop
+  // camera and is the right SSR default.
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const update = () => setNarrow(window.innerWidth < 768);
+    update();
+    window.addEventListener('resize', update, { passive: true });
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   return (
     <div className="relative h-full w-full">
       <Canvas
@@ -436,6 +482,7 @@ export function OrderPreview({ expanded }: OrderPreviewProps) {
         }}
         frameloop="always"
       >
+        <ResponsiveCamera expanded={expanded} narrow={narrow} />
         <color attach="background" args={['#07070a']} />
         <fog attach="fog" args={['#07070a', 9, 22]} />
 
@@ -542,10 +589,12 @@ export function OrderPreview({ expanded }: OrderPreviewProps) {
         )}
       </Canvas>
 
-      {/* Helper hint, only while expanded */}
+      {/* Helper hint, only while expanded. Wording shifts on touch where
+          there's no scroll wheel, and the pill is pushed up off the
+          phone's bottom edge so the home-bar doesn't hide it. */}
       {expanded && (
-        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-ink-900/70 px-4 py-2 font-mono text-[10px] tracking-[0.28em] text-bone-200 uppercase ring-1 ring-bone-50/10 backdrop-blur">
-          Drag to rotate · scroll to zoom
+        <div className="pointer-events-none absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-ink-900/70 px-4 py-2 font-mono text-[10px] tracking-[0.24em] text-bone-200 uppercase ring-1 ring-bone-50/10 backdrop-blur sm:bottom-6 sm:tracking-[0.28em]">
+          {narrow ? 'Drag · pinch · double-tap' : 'Drag to rotate · scroll to zoom'}
         </div>
       )}
     </div>
