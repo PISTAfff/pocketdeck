@@ -1,28 +1,40 @@
 'use client';
 
 /**
- * Order summary aside, reflects the current scene-store selection and the
- * client-side price derived from the configurator product.
+ * Order summary aside, reflects the current scene-store selections and the
+ * client-side price derived from the configurator product + package size.
  *
- * The SKU is rendered on its own row with `word-break: break-all` so the
- * long hyphenated identifier wraps inside the panel without pushing layout.
+ * Multi-board packages list each board separately with its own SKU; total
+ * lives at the bottom alongside the package savings vs. N solo boards.
  */
-import type { ConfigurationSelection, Product } from '@pocketdeck/types';
-import { skuFromSelection } from '@pocketdeck/types';
+import {
+  packageSavingsEGP,
+  packageTotalEGP,
+  skuFromSelection,
+  PACKAGE_OFFERS,
+} from '@pocketdeck/types';
+import type {
+  ConfigurationSelection,
+  PackageSize,
+  Product,
+} from '@pocketdeck/types';
 
 interface OrderSummaryProps {
   productSlug: string;
-  selection: ConfigurationSelection;
+  packageSize: PackageSize;
+  selections: ConfigurationSelection[];
   product: Product | null;
 }
 
 export function OrderSummary({
   productSlug,
-  selection,
+  packageSize,
+  selections,
   product,
 }: OrderSummaryProps) {
-  const total = derivePrice(product, selection);
-  const sku = skuFromSelection(productSlug, selection);
+  const total = packageTotalEGP(product, packageSize, selections);
+  const savings = packageSavingsEGP(packageSize);
+  const offer = PACKAGE_OFFERS.find((o) => o.size === packageSize);
   return (
     <div>
       <span className="tape inline-block">05 · order</span>
@@ -37,32 +49,62 @@ export function OrderSummary({
       </p>
 
       <div className="mt-10 rounded-2xl border border-bone-50/10 bg-ink-900/85 p-6 backdrop-blur-xl">
-        <p className="font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase">
-          Your build
-        </p>
-        <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 font-mono text-[12px] text-bone-100">
-          <dt className="text-bone-300">Deck</dt>
-          <dd className="text-right capitalize">{selection.deck.replace('-', ' ')}</dd>
-          <dt className="text-bone-300">Wheels</dt>
-          <dd className="text-right capitalize">{selection.wheel}</dd>
-          <dt className="text-bone-300">Trucks</dt>
-          <dd className="text-right capitalize">{selection.truck.replace('-', ' ')}</dd>
-          <dt className="text-bone-300">Grip</dt>
-          <dd className="text-right capitalize">{selection.grip}</dd>
-        </dl>
-
-        <div className="mt-5 border-t border-bone-50/10 pt-4">
-          <p className="font-mono text-[11px] tracking-[0.24em] text-bone-300 uppercase">
-            SKU
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase">
+            Your build
           </p>
-          <p
-            className="mt-1 font-mono text-[11px] text-bone-100"
-            style={{ wordBreak: 'break-all' }}
-            title={sku}
-          >
-            {sku}
-          </p>
+          {offer && (
+            <span className="rounded-full bg-ember-500/15 px-2.5 py-0.5 font-mono text-[10px] tracking-[0.22em] text-ember-300 uppercase">
+              {offer.label} · {packageSize}-board
+            </span>
+          )}
         </div>
+
+        <div className="mt-4 flex flex-col gap-3">
+          {selections.map((sel, i) => {
+            const sku = skuFromSelection(productSlug, sel);
+            return (
+              <div
+                key={i}
+                className="rounded-xl border border-bone-50/10 bg-white/[0.02] p-3"
+              >
+                <p className="font-mono text-[10px] tracking-[0.22em] text-ember-400 uppercase">
+                  Board {i + 1}
+                  {packageSize > 1 && (
+                    <span className="text-bone-300"> / {packageSize}</span>
+                  )}
+                </p>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 font-mono text-[11px] text-bone-100">
+                  <dt className="text-bone-300">Deck</dt>
+                  <dd className="text-right capitalize">
+                    {sel.deck.replace('-', ' ')}
+                  </dd>
+                  <dt className="text-bone-300">Wheels</dt>
+                  <dd className="text-right capitalize">{sel.wheel}</dd>
+                  <dt className="text-bone-300">Trucks</dt>
+                  <dd className="text-right capitalize">
+                    {sel.truck.replace('-', ' ')}
+                  </dd>
+                  <dt className="text-bone-300">Grip</dt>
+                  <dd className="text-right capitalize">{sel.grip}</dd>
+                </dl>
+                <p
+                  className="mt-2 font-mono text-[10px] text-bone-300"
+                  style={{ wordBreak: 'break-all' }}
+                  title={sku}
+                >
+                  {sku}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {savings > 0 && (
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-ember-500/15 px-3 py-1 font-mono text-[10px] tracking-[0.22em] text-ember-300 uppercase">
+            ✓ You save {savings} EGP
+          </p>
+        )}
 
         <div className="mt-5 flex items-baseline justify-between border-t border-bone-50/10 pt-5">
           <span className="font-mono text-[11px] tracking-[0.32em] text-bone-300 uppercase">
@@ -75,14 +117,4 @@ export function OrderSummary({
       </div>
     </div>
   );
-}
-
-function derivePrice(
-  product: Product | null,
-  selection: ConfigurationSelection,
-): number | null {
-  if (!product) return null;
-  const deck = product.options.deck.find((d) => d.value === selection.deck);
-  const mod = deck?.priceModifier ?? 0;
-  return product.basePriceEGP + mod;
 }

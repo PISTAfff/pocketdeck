@@ -114,9 +114,14 @@ export const TRUCK_MATERIALS: Record<TruckColor, MaterialPaint> = {
 // tuned so each pattern is clearly distinct on the deck top.
 export const GRIP_MATERIALS: Record<GripPattern, MaterialPaint> = {
   classic: {
-    // Pure grit, dark base + slightly lighter dotted accent.
+    // Dark base with a medium-grey silica grit pattern. Earlier waves
+    // pushed the accent to near-white so the dots would read from a
+    // distance, but on a colored deck plate that turned the whole top
+    // into a bright decal. Real grip tape is a dark surface with a
+    // light fleck-noise of silicon carbide - #6e6e76 lands close to
+    // that read while still being visible against the #0a0a0e base.
     color: '#0a0a0e',
-    accent: '#2a2a30',
+    accent: '#6e6e76',
     metalness: 0.05,
     roughness: 0.95,
   },

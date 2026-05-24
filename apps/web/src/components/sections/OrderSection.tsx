@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import Link from 'next/link';
 import type { CreateOrderRequest, Governorate, Order } from '@pocketdeck/types';
 import { useSceneStore } from '@/store/scene';
 import { useConfiguratorStore } from '@/store/configurator';
@@ -26,6 +27,8 @@ import { GOVERNORATES } from './governorates';
 import { Field, FieldError } from './OrderFields';
 import { OrderSummary } from './OrderSummary';
 import { OrderPreview } from './OrderPreview';
+import { SkateSwitcher } from './SkateSwitcher';
+import { StreetSprite } from '@/components/ui/StreetSprite';
 import { pauseScroll, resumeScroll } from '@/hooks/useLenis';
 import {
   handleSubmitError,
@@ -77,7 +80,8 @@ function validate(form: CustomerForm): ValidationResult {
 
 export function OrderSection() {
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
-  const selection = useSceneStore((s) => s.selection);
+  const selections = useSceneStore((s) => s.selections);
+  const packageSize = useSceneStore((s) => s.packageSize);
   const product = useConfiguratorStore((s) => s.product);
   const sectionRef = useRef<HTMLElement | null>(null);
 
@@ -170,8 +174,8 @@ export function OrderSection() {
     setErrors({});
     const req: CreateOrderRequest = {
       productSlug: PRODUCT_SLUG,
-      selection,
-      quantity: 1,
+      packageSize,
+      selections,
       customer: {
         name: form.name.trim(),
         phone: form.phone.trim(),
@@ -181,6 +185,22 @@ export function OrderSection() {
     };
     try {
       const order = await createOrder(req);
+      // Persist a lightweight pointer in localStorage so the customer
+      // can find this order again from /track-order without typing the
+      // full ID. Only id + phone is saved (enough for the lookup).
+      try {
+        const key = 'pocketdeck:recentOrders';
+        const existing = JSON.parse(
+          window.localStorage.getItem(key) ?? '[]',
+        ) as { id: string; phone: string; createdAt: string }[];
+        const next = [
+          { id: order.id, phone: order.customer.phone, createdAt: order.createdAt },
+          ...existing.filter((o) => o.id !== order.id),
+        ].slice(0, 5);
+        window.localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        // localStorage blocked? Carry on - the order succeeded.
+      }
       setStatus({ kind: 'success', order });
     } catch (err) {
       handleSubmitError(err, setErrors, setStatus);
@@ -195,8 +215,45 @@ export function OrderSection() {
       id="order"
       className="relative bg-ink-950 px-6 pt-24 pb-24 sm:px-10 md:px-14 md:pt-24"
     >
+      {/* Street-sprite scatter for the order section */}
+      <StreetSprite
+        kind="tag"
+        size={40}
+        color="ember"
+        rotate={-18}
+        hover="pop"
+        className="absolute top-20 right-[8%] z-0"
+      />
+      <StreetSprite
+        kind="spark"
+        size={30}
+        color="bone"
+        rotate={0}
+        hover="spin"
+        className="absolute top-[35%] left-6 z-0 md:left-12"
+      />
+      <StreetSprite
+        kind="wave"
+        size={56}
+        color="mute"
+        rotate={-5}
+        hover="none"
+        className="absolute bottom-20 left-[40%] z-0 hidden md:inline-flex"
+      />
+      <StreetSprite
+        kind="star"
+        size={22}
+        color="ember"
+        rotate={25}
+        hover="wiggle"
+        className="absolute bottom-32 right-12 z-0"
+      />
+
       {status.kind === 'success' ? (
-        <OrderSuccess order={status.order} totalLabel={summaryTotal(product, selection)} />
+        <OrderSuccess
+          order={status.order}
+          totalLabel={summaryTotal(product, packageSize, selections)}
+        />
       ) : (
         <div className="mx-auto max-w-[1400px]">
           {/* "Review & Buy" header */}
@@ -228,38 +285,51 @@ export function OrderSection() {
             }}
           >
             <aside className="flex flex-col gap-6">
-              {/* Rotating preview, collapsed state */}
-              <button
-                type="button"
-                onClick={() => setPreviewExpanded(true)}
-                data-cursor="link"
-                aria-label="Expand the build preview to fullscreen"
-                className="group relative overflow-hidden rounded-2xl border border-bone-50/10 text-left transition-shadow hover:shadow-[0_22px_60px_-18px_rgba(255,91,20,0.35)]"
+              {/* Rotating preview, collapsed state. We render the
+                  SkateSwitcher OVER the button (z-10) so it can flip
+                  boards without triggering the expand-fullscreen
+                  handler. */}
+              <div
+                className="relative overflow-hidden rounded-2xl border border-bone-50/10"
                 style={{
                   background: 'rgba(245, 245, 240, 0.04)',
                   height: '320px',
                 }}
               >
-                <OrderPreview expanded={false} />
-                <span className="pointer-events-none absolute right-4 bottom-4 inline-flex items-center gap-2 rounded-full bg-ink-950/80 px-3 py-1.5 font-mono text-[10px] tracking-[0.28em] text-bone-100 uppercase ring-1 ring-bone-50/15 backdrop-blur transition-colors group-hover:bg-ember-500 group-hover:text-ink-950">
-                  Expand
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M2 2 L5 2 M2 2 L2 5 M10 10 L7 10 M10 10 L10 7"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-                <span className="pointer-events-none absolute top-4 left-4 inline-block font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase">
-                  Live preview · auto-rotate
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewExpanded(true)}
+                  data-cursor="link"
+                  aria-label="Expand the build preview to fullscreen"
+                  className="group absolute inset-0 text-left transition-shadow hover:shadow-[0_22px_60px_-18px_rgba(255,91,20,0.35)]"
+                >
+                  <OrderPreview expanded={false} />
+                  <span className="pointer-events-none absolute right-4 bottom-4 inline-flex items-center gap-2 rounded-full bg-ink-950/80 px-3 py-1.5 font-mono text-[10px] tracking-[0.28em] text-bone-100 uppercase ring-1 ring-bone-50/15 backdrop-blur transition-colors group-hover:bg-ember-500 group-hover:text-ink-950">
+                    Expand
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path
+                        d="M2 2 L5 2 M2 2 L2 5 M10 10 L7 10 M10 10 L10 7"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <span className="pointer-events-none absolute top-4 left-4 inline-block font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase">
+                    Live preview · auto-rotate
+                  </span>
+                </button>
+                {packageSize > 1 && (
+                  <div className="pointer-events-auto absolute top-3 right-3 z-10">
+                    <SkateSwitcher compact />
+                  </div>
+                )}
+              </div>
 
               <OrderSummary
                 productSlug={PRODUCT_SLUG}
-                selection={selection}
+                packageSize={packageSize}
+                selections={selections}
                 product={product}
               />
             </aside>
@@ -417,9 +487,9 @@ export function OrderSection() {
                   exit={{ opacity: 0 }}
                   className="pointer-events-none absolute right-6 bottom-6 hidden font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase md:right-10 md:bottom-10 md:block"
                 >
-                  <span className="text-bone-100">Your build · </span>
-                  {selection.deck} / {selection.wheel} / {selection.truck} /{' '}
-                  {selection.grip}
+                  <span className="text-bone-100">
+                    {packageSize}-board package
+                  </span>
                 </motion.div>
               </motion.div>
             )}
@@ -439,6 +509,20 @@ function OrderSuccess({
   totalLabel: string;
 }) {
   const eta = etaDays(order.customer.governorate);
+  const [copied, setCopied] = useState(false);
+  const trackHref = `/track-order?id=${encodeURIComponent(order.id)}&phone=${encodeURIComponent(order.customer.phone)}`;
+
+  async function copyId() {
+    try {
+      await navigator.clipboard.writeText(order.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard blocked - silent; the user can still select the
+      // text in the box manually.
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-[900px] flex-col items-start gap-10">
       <div className="flex items-center gap-3">
@@ -464,14 +548,49 @@ function OrderSuccess({
         delivery within {eta}.
       </p>
 
+      {/* Full order id surfaced so the customer can plug it into
+          /track-order on any device. The 6-char short id at the top
+          is just for human-friendliness; the lookup requires the
+          full 24-char value. */}
+      <div
+        className="w-full max-w-xl rounded-2xl border border-ember-500/30 p-5"
+        style={{ background: 'rgba(255, 91, 20, 0.06)' }}
+      >
+        <p className="font-mono text-[10px] tracking-[0.28em] text-ember-300 uppercase">
+          Your tracking ID
+        </p>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <code className="flex-1 overflow-x-auto rounded-lg bg-ink-950/60 px-3 py-2.5 font-mono text-[12px] tracking-wider text-bone-50">
+            {order.id}
+          </code>
+          <button
+            type="button"
+            onClick={copyId}
+            className="shrink-0 rounded-full border border-bone-50/15 px-4 py-2 font-mono text-[10px] tracking-[0.22em] text-bone-50 uppercase transition-colors hover:border-ember-500/50 hover:text-ember-300"
+          >
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+        <p className="mt-3 font-sans text-[12px] text-bone-300">
+          Keep this safe — you&rsquo;ll need it (plus your phone number)
+          to look up the order on the tracking page.
+        </p>
+        <Link
+          href={trackHref}
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-ember-500 px-5 py-2.5 font-mono text-[11px] tracking-[0.24em] text-ink-950 uppercase transition-opacity hover:opacity-90"
+        >
+          Track this order →
+        </Link>
+      </div>
+
       <dl
         className="grid w-full max-w-md gap-5 rounded-2xl border border-bone-50/10 p-7"
         style={{ background: 'rgba(245, 245, 240, 0.04)' }}
       >
         <div className="flex items-baseline justify-between gap-4 font-mono text-sm">
-          <dt className="tracking-[0.24em] text-bone-300 uppercase">SKU</dt>
-          <dd className="text-right text-bone-50" style={{ wordBreak: 'break-all' }}>
-            {order.sku}
+          <dt className="tracking-[0.24em] text-bone-300 uppercase">Package</dt>
+          <dd className="text-right text-bone-50">
+            {order.packageSize} board{order.packageSize > 1 ? 's' : ''}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-4 font-mono text-sm">
@@ -506,11 +625,19 @@ function etaDays(governorate: Governorate | string): string {
 
 function summaryTotal(
   product: ReturnType<typeof useConfiguratorStore.getState>['product'],
-  selection: { deck: string },
+  packageSize: 1 | 2 | 3,
+  selections: { deck: string }[],
 ): string {
   if (!product) return '—';
-  const deck = product.options.deck.find((d) => d.value === selection.deck);
-  const total = product.basePriceEGP + (deck?.priceModifier ?? 0);
+  // Mirror packageTotalEGP() from @pocketdeck/types but with a forgiving
+  // signature so we can call it before the full Order type is wired in.
+  const PACKAGE_BASES = { 1: 350, 2: 600, 3: 800 } as const;
+  let surcharge = 0;
+  for (const sel of selections) {
+    const deck = product.options.deck.find((d) => d.value === sel.deck);
+    surcharge += deck?.priceModifier ?? 0;
+  }
+  const total = PACKAGE_BASES[packageSize] + surcharge;
   return new Intl.NumberFormat('en-EG', {
     style: 'currency',
     currency: 'EGP',

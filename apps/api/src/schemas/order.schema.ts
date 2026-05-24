@@ -50,6 +50,37 @@ const GOVERNORATES: Governorate[] = [
 
 const PHONE_REGEX = /^01[0-2,5]\d{8}$/;
 
+const selectionSchema = Joi.object({
+  deck: Joi.string()
+    .valid(...DECKS)
+    .required()
+    .messages({
+      'any.only': 'Invalid deck selection.',
+      'any.required': 'Deck is required.',
+    }),
+  wheel: Joi.string()
+    .valid(...WHEELS)
+    .required()
+    .messages({
+      'any.only': 'Invalid wheel selection.',
+      'any.required': 'Wheel is required.',
+    }),
+  truck: Joi.string()
+    .valid(...TRUCKS)
+    .required()
+    .messages({
+      'any.only': 'Invalid truck selection.',
+      'any.required': 'Truck is required.',
+    }),
+  grip: Joi.string()
+    .valid(...GRIPS)
+    .required()
+    .messages({
+      'any.only': 'Invalid grip selection.',
+      'any.required': 'Grip is required.',
+    }),
+});
+
 export const createOrderSchema = Joi.object<CreateOrderRequest>({
   productSlug: Joi.string()
     .pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
@@ -62,49 +93,31 @@ export const createOrderSchema = Joi.object<CreateOrderRequest>({
       'string.max': 'productSlug must be at most 40 characters.',
       'any.required': 'productSlug is required.',
     }),
-  selection: Joi.object({
-    deck: Joi.string()
-      .valid(...DECKS)
-      .required()
-      .messages({
-        'any.only': 'Invalid deck selection.',
-        'any.required': 'Deck is required.',
-      }),
-    wheel: Joi.string()
-      .valid(...WHEELS)
-      .required()
-      .messages({
-        'any.only': 'Invalid wheel selection.',
-        'any.required': 'Wheel is required.',
-      }),
-    truck: Joi.string()
-      .valid(...TRUCKS)
-      .required()
-      .messages({
-        'any.only': 'Invalid truck selection.',
-        'any.required': 'Truck is required.',
-      }),
-    grip: Joi.string()
-      .valid(...GRIPS)
-      .required()
-      .messages({
-        'any.only': 'Invalid grip selection.',
-        'any.required': 'Grip is required.',
-      }),
-  })
-    .required()
-    .messages({ 'any.required': 'Selection is required.' }),
-  quantity: Joi.number()
+  packageSize: Joi.number()
     .integer()
-    .min(1)
-    .max(5)
+    .valid(1, 2, 3)
     .required()
     .messages({
-      'number.base': 'Quantity must be a number.',
-      'number.integer': 'Quantity must be an integer.',
-      'number.min': 'Quantity must be at least 1.',
-      'number.max': 'Quantity must be at most 5.',
-      'any.required': 'Quantity is required.',
+      'any.only': 'packageSize must be 1, 2, or 3.',
+      'any.required': 'packageSize is required.',
+    }),
+  selections: Joi.array()
+    .items(selectionSchema)
+    .min(1)
+    .max(3)
+    .required()
+    .custom((value: unknown[], helpers) => {
+      const ctx = helpers.state.ancestors[0] as { packageSize?: number };
+      if (ctx && ctx.packageSize && value.length !== ctx.packageSize) {
+        return helpers.error('array.length', { limit: ctx.packageSize });
+      }
+      return value;
+    })
+    .messages({
+      'array.length': 'selections must contain exactly packageSize entries.',
+      'array.min': 'selections must contain at least one board.',
+      'array.max': 'selections may contain at most 3 boards.',
+      'any.required': 'selections is required.',
     }),
   customer: Joi.object({
     name: Joi.string()

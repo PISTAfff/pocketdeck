@@ -101,12 +101,21 @@ export function useLenis() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Balanced / responsive tuning: lower duration + higher lerp so the
+    // scroll reacts quickly to the wheel without feeling laggy, while still
+    // damping the raw browser scroll into a soft inertial glide. The earlier
+    // duration: 1.2 / lerp: 0.1 settings made fast scrolls feel "stuck" -
+    // the page kept gliding after the user stopped, which combined with the
+    // pinned sections to read as "blocky".
     const lenis = new Lenis({
-      duration: 1.2,
-      lerp: 0.1,
+      duration: 0.9,
+      lerp: 0.13,
       smoothWheel: true,
-      wheelMultiplier: 1,
+      wheelMultiplier: 1.05,
       touchMultiplier: 1.2,
+      // Ease-out quart - decelerates faster than ease-out cubic, so the
+      // glide settles more naturally.
+      easing: (t: number) => 1 - Math.pow(1 - t, 4),
       autoRaf: false,
     });
     lenisRef.current = lenis;

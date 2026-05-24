@@ -1,0 +1,35 @@
+# Render Blueprint — defines the API web service.
+#
+# Usage:
+#   1. Push this repo to GitHub.
+#   2. In Render: New → Blueprint → pick this repo. Render reads this file
+#      and provisions the service below.
+#   3. Set the env vars listed under `envVars` that are marked `sync: false`
+#      (Render won't create them for you — they're secrets).
+#
+# The Next.js front-end is NOT in here. Deploy it separately to Vercel and
+# wire `NEXT_PUBLIC_API_ORIGIN` to the URL Render gives you for this service.
+services:
+  - type: web
+    name: pocketdeck-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    # The repo is a pnpm workspace. Render runs commands from the repo root.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @pocketdeck/api start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WEB_ORIGIN
+        # Comma-separated. Replace with your real Vercel domain(s).
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: RATE_LIMIT_MAX
+        value: "20"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "60000"

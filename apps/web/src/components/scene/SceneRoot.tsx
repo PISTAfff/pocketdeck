@@ -37,11 +37,19 @@ export function SceneRoot() {
   const [isMounted, setIsMounted] = useState(false);
   const scrollOpacity = useSceneStore((s) => s.sceneOpacity);
   const activeSection = useSceneStore((s) => s.activeSection);
+  const wizardPhase = useSceneStore((s) => s.wizardPhase);
 
   // Final opacity is the more-restrictive of the scroll fade and the
   // per-section cap. Manifesto, for example, caps the canvas at 0.3 so the
   // deck reads as a faded background element behind the grid (#16).
-  const sceneOpacity = Math.min(scrollOpacity, getSceneOpacity(activeSection));
+  // During the configurator's package phase we hide the main canvas
+  // outright: each package card hosts its own R3F mini scene with its
+  // own lighting, and a dark deck silhouette behind translucent cards
+  // would otherwise drift as the user scrolls.
+  let sceneOpacity = Math.min(scrollOpacity, getSceneOpacity(activeSection));
+  if (wizardPhase === 'package' && activeSection === 'configurator') {
+    sceneOpacity = 0;
+  }
 
   useEffect(() => {
     setIsMounted(true);

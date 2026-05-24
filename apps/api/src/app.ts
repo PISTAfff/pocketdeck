@@ -12,6 +12,7 @@ import morgan from 'morgan';
 
 import { env } from './lib/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
+import { adminRouter } from './routes/admin.js';
 import { healthRouter } from './routes/health.js';
 import { ordersRouter } from './routes/orders.js';
 import { productsRouter } from './routes/products.js';
@@ -21,10 +22,14 @@ export function createApp(): Express {
   const app = express();
 
   app.disable('x-powered-by');
+  // Render (and most PaaS) front the app with a reverse proxy. Trust one hop
+  // so `req.ip` is the real client and express-rate-limit doesn't lump every
+  // request under the proxy address.
+  app.set('trust proxy', 1);
   app.use(helmet());
   app.use(
     cors({
-      origin: env.WEB_ORIGIN,
+      origin: env.WEB_ORIGINS,
       credentials: false,
     }),
   );
@@ -39,6 +44,7 @@ export function createApp(): Express {
   app.use('/api', productsRouter);
   app.use('/api', ordersRouter);
   app.use('/api', subscribersRouter);
+  app.use('/api', adminRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

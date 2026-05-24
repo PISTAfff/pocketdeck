@@ -11,6 +11,7 @@ export const ErrorCode = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   OUT_OF_STOCK: 'OUT_OF_STOCK',
   RATE_LIMITED: 'RATE_LIMITED',
+  BAD_REQUEST: 'BAD_REQUEST',
   INTERNAL: 'INTERNAL',
 } as const;
 
@@ -50,6 +51,10 @@ export class ApiError extends Error {
 
   static rateLimited(message = 'Too many requests from this IP.'): ApiError {
     return new ApiError(429, ErrorCode.RATE_LIMITED, message);
+  }
+
+  static badRequest(message = 'Bad request.'): ApiError {
+    return new ApiError(400, ErrorCode.BAD_REQUEST, message);
   }
 
   static internal(message = 'Internal server error.'): ApiError {

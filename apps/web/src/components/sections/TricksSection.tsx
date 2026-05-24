@@ -10,6 +10,7 @@
 import { useEffect, useRef } from 'react';
 import { useSceneStore } from '@/store/scene';
 import { TrickTile } from './TrickTile';
+import { StreetSprite } from '@/components/ui/StreetSprite';
 
 interface TrickDef {
   id: string;
@@ -55,9 +56,51 @@ export function TricksSection() {
       // #32: top padding halved so the heading sits closer to the grid.
       className="relative bg-ink-950 px-6 pt-16 pb-24 sm:px-10 md:px-14 md:pt-20 md:pb-24"
     >
+      {/* Street-sprite scatter for the tricks section */}
+      <StreetSprite
+        kind="bolt"
+        size={56}
+        color="ember"
+        rotate={20}
+        hover="pop"
+        className="absolute top-12 right-[6%] z-0"
+      />
+      <StreetSprite
+        kind="skull"
+        size={36}
+        color="bone"
+        rotate={-8}
+        hover="wiggle"
+        className="absolute top-[30%] left-4 z-0 md:left-8"
+      />
+      <StreetSprite
+        kind="tag"
+        size={48}
+        color="ember"
+        rotate={-12}
+        hover="pulse"
+        className="absolute bottom-20 right-12 z-0"
+      />
+      <StreetSprite
+        kind="dots"
+        size={64}
+        color="mute"
+        rotate={15}
+        hover="none"
+        className="absolute bottom-8 left-[20%] z-0 hidden md:inline-flex"
+      />
+      <StreetSprite
+        kind="star"
+        size={26}
+        color="bone"
+        rotate={0}
+        hover="spin"
+        className="absolute top-[20%] right-[40%] z-0 hidden md:inline-flex"
+      />
+
       <div className="mx-auto max-w-[1400px]">
         <header className="flex flex-col items-start gap-4">
-          <span className="tape inline-block">04 · tricks</span>
+          <span className="tape inline-block">03 · tricks</span>
           <h2
             className="display-headline text-bone-50"
             style={{ fontSize: 'clamp(2.5rem, 6.5vw, 5.5rem)' }}

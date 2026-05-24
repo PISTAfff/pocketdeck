@@ -18,8 +18,8 @@ export default function HomePage() {
       <HeroSection />
       <ManifestoSection />
       <AnatomySection />
-      <ConfiguratorSection />
       <TricksSection />
+      <ConfiguratorSection />
       <OrderSection />
     </main>
   );

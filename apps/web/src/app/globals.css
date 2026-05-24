@@ -66,12 +66,14 @@ body {
   color: var(--color-bone-50);
   font-family: var(--font-sans);
   cursor: none;
-  /* No horizontal scroll anywhere (#5). */
-  overflow-x: hidden;
+  /* `overflow-x: clip` (not hidden) keeps `position: sticky` working on
+     descendants - the anatomy / configurator stages use sticky to stay
+     visible across scroll without GSAP pinning, which used to feel blocky. */
+  overflow-x: clip;
 }
 
 main {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -433,4 +435,59 @@ html.lenis body {
     animation-delay: 0ms !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* Newsletter editor + preview surface. Element styles only — the
+   composer's contentEditable and the preview's dangerouslySetInnerHTML
+   both render plain h1/h2/p/ul markup, so a single shared rule set
+   keeps them visually identical. Scoped to .prose-newsletter so nothing
+   else picks up these defaults. */
+.prose-newsletter h1 {
+  font-family: var(--font-anton), Impact, sans-serif;
+  font-size: 1.875rem;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0 0 0.5rem;
+  color: rgb(245 245 240);
+}
+.prose-newsletter h2 {
+  font-family: var(--font-anton), Impact, sans-serif;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+  margin: 1rem 0 0.5rem;
+  color: rgb(245 245 240);
+}
+.prose-newsletter h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0.875rem 0 0.5rem;
+  color: rgb(245 245 240);
+}
+.prose-newsletter p {
+  margin: 0 0 0.75rem;
+  line-height: 1.65;
+}
+.prose-newsletter ul,
+.prose-newsletter ol {
+  margin: 0.5rem 0 0.75rem 1.5rem;
+  line-height: 1.65;
+}
+.prose-newsletter ul { list-style: disc; }
+.prose-newsletter ol { list-style: decimal; }
+.prose-newsletter a {
+  color: #ff7a3d;
+  text-decoration: underline;
+}
+.prose-newsletter strong,
+.prose-newsletter b { font-weight: 700; }
+.prose-newsletter em,
+.prose-newsletter i { font-style: italic; }
+.prose-newsletter blockquote {
+  border-left: 3px solid rgba(255, 91, 20, 0.6);
+  padding: 0.25rem 0 0.25rem 1rem;
+  margin: 0.75rem 0;
+  color: rgb(220 220 215);
+  font-style: italic;
 }

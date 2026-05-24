@@ -30,7 +30,11 @@ export function SceneCamera(props: PerspectiveCameraProps) {
     if (!cam) return;
 
     const state = useSceneStore.getState();
-    const kf = getCameraKeyframe(state.activeSection, state.highlightPart);
+    const kf = getCameraKeyframe(
+      state.activeSection,
+      state.highlightPart,
+      state.anatomyProgress,
+    );
 
     targetPos.set(kf.position[0], kf.position[1], kf.position[2]);
     targetLookAt.set(kf.target[0], kf.target[1], kf.target[2]);

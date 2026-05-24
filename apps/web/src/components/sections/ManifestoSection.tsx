@@ -16,6 +16,7 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useScrollTrigger, gsap } from '@/hooks/useScrollTrigger';
 import { useSceneStore } from '@/store/scene';
+import { StreetSprite } from '@/components/ui/StreetSprite';
 
 interface Declaration {
   index: string;
@@ -93,6 +94,40 @@ export function ManifestoSection() {
       id="manifesto"
       className="relative px-6 py-24 sm:px-10 md:px-14 md:py-24"
     >
+      {/* Street-sprite scatter for the manifesto */}
+      <StreetSprite
+        kind="arrow"
+        size={44}
+        color="ember"
+        rotate={-8}
+        hover="jitter"
+        className="absolute top-16 right-[8%] z-0"
+      />
+      <StreetSprite
+        kind="ring"
+        size={32}
+        color="bone"
+        rotate={0}
+        hover="pulse"
+        className="absolute top-[42%] left-4 z-0 md:left-10"
+      />
+      <StreetSprite
+        kind="tri"
+        size={20}
+        color="ember"
+        rotate={-25}
+        hover="wiggle"
+        className="absolute bottom-32 right-[14%] z-0"
+      />
+      <StreetSprite
+        kind="wave"
+        size={64}
+        color="mute"
+        rotate={0}
+        hover="none"
+        className="absolute bottom-12 left-[35%] z-0 hidden md:inline-flex"
+      />
+
       <div className="mx-auto w-full max-w-[1400px]">
         <motion.div
           initial={{ opacity: 0, y: 12 }}

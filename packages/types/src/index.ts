@@ -112,9 +112,45 @@ export interface Product {
   updatedAt: string;
 }
 
+// --- Packages -------------------------------------------------------------
+
+/** A package contains 1, 2, or 3 fully-customized boards. */
+export type PackageSize = 1 | 2 | 3;
+
+/**
+ * Pricing tier for a multi-board package. The `basePriceEGP` is the
+ * "starter" cost for that many boards before any per-board variant
+ * surcharges (premium deck graphics) are added on top.
+ */
+export interface PackageOffer {
+  size: PackageSize;
+  basePriceEGP: number;
+  /** Marketing label, e.g. "Solo", "Duo", "Crew". */
+  label: string;
+  /** One-line vibe blurb shown under the label. */
+  vibe: string;
+}
+
+/** Fixed pricing tiers. */
+export const PACKAGE_OFFERS: readonly PackageOffer[] = [
+  { size: 1, basePriceEGP: 350, label: 'Solo', vibe: 'Just yours' },
+  { size: 2, basePriceEGP: 600, label: 'Duo', vibe: 'You and a friend' },
+  { size: 3, basePriceEGP: 800, label: 'Crew', vibe: 'Three boards, one drop' },
+] as const;
+
+/** Solo (per-board) starter price - used to derive savings for larger packs. */
+export const SOLO_BASE_PRICE_EGP = 350;
+
+/** Savings vs. buying that many Solo packs separately. */
+export function packageSavingsEGP(size: PackageSize): number {
+  const offer = PACKAGE_OFFERS.find((o) => o.size === size);
+  if (!offer) return 0;
+  return Math.max(0, SOLO_BASE_PRICE_EGP * size - offer.basePriceEGP);
+}
+
 // --- Order ----------------------------------------------------------------
 
-/** The selection a customer made in the configurator. */
+/** The selection a customer made in the configurator (one board). */
 export interface ConfigurationSelection {
   deck: DeckGraphic;
   wheel: WheelColor;
@@ -134,9 +170,12 @@ export interface OrderCustomer {
 export interface Order {
   id: string;
   productSlug: string;
-  selection: ConfigurationSelection;
-  sku: string;
-  quantity: number;
+  /** How many boards are in this order: 1, 2, or 3. */
+  packageSize: PackageSize;
+  /** One selection per board. Length === packageSize. */
+  selections: ConfigurationSelection[];
+  /** SKU per board in the same order as `selections`. */
+  skus: string[];
   totalEGP: number;
   customer: OrderCustomer;
   status: OrderStatus;
@@ -179,8 +218,9 @@ export type GetProductResponse = ApiSuccessResponse<Product>;
 // POST /api/orders
 export interface CreateOrderRequest {
   productSlug: string;
-  selection: ConfigurationSelection;
-  quantity: number;
+  packageSize: PackageSize;
+  /** One per board. Length must equal packageSize. */
+  selections: ConfigurationSelection[];
   customer: OrderCustomer;
 }
 export type CreateOrderResponse = ApiSuccessResponse<Order>;
@@ -207,4 +247,25 @@ export interface HealthResponse {
 /** Compose a deterministic SKU from a selection. Used by both web and api. */
 export function skuFromSelection(slug: string, s: ConfigurationSelection): string {
   return `${slug}-${s.deck}-${s.wheel}-${s.truck}-${s.grip}`.toLowerCase();
+}
+
+/**
+ * Compute the total package price: package base + sum of each board's
+ * deck `priceModifier` (the only axis that carries a surcharge today).
+ * Returns null when the product hasn't loaded yet.
+ */
+export function packageTotalEGP(
+  product: Product | null,
+  packageSize: PackageSize,
+  selections: ConfigurationSelection[],
+): number | null {
+  if (!product) return null;
+  const offer = PACKAGE_OFFERS.find((o) => o.size === packageSize);
+  if (!offer) return null;
+  let surcharge = 0;
+  for (const sel of selections) {
+    const deck = product.options.deck.find((d) => d.value === sel.deck);
+    surcharge += deck?.priceModifier ?? 0;
+  }
+  return offer.basePriceEGP + surcharge;
 }

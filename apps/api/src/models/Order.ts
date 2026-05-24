@@ -44,9 +44,21 @@ const ORDER_STATUSES: OrderStatus[] = [
 const OrderSchema = new Schema<OrderT>(
   {
     productSlug: { type: String, required: true, index: true },
-    selection: { type: SelectionSchema, required: true },
-    sku: { type: String, required: true, index: true },
-    quantity: { type: Number, required: true },
+    packageSize: { type: Number, required: true, enum: [1, 2, 3] },
+    selections: {
+      type: [SelectionSchema],
+      required: true,
+      validate: {
+        validator: (v: unknown[]) =>
+          Array.isArray(v) && v.length >= 1 && v.length <= 3,
+        message: 'selections must contain 1-3 boards',
+      },
+    },
+    skus: {
+      type: [String],
+      required: true,
+      index: true,
+    },
     totalEGP: { type: Number, required: true },
     customer: { type: CustomerSchema, required: true },
     status: {

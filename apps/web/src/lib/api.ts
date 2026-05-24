@@ -98,4 +98,180 @@ export async function createSubscriber(email: string): Promise<Subscriber> {
   }
 }
 
+/**
+ * Customer order tracking: matches an order ID with the phone number on
+ * file. The API returns 404 with the same payload whether the order
+ * doesn't exist OR the phone doesn't match, so we don't leak existence.
+ */
+export async function trackOrder(id: string, phone: string): Promise<Order> {
+  try {
+    const { data } = await client.get<{ data: Order }>(
+      `/orders/track/${encodeURIComponent(id)}`,
+      { params: { phone } },
+    );
+    return data.data;
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+/** Admin: list recent orders, optionally filtered by status. */
+export async function listOrders(opts: {
+  status?: string;
+  limit?: number;
+  authHeader?: Record<string, string>;
+} = {}): Promise<Order[]> {
+  try {
+    const { data } = await client.get<{ data: Order[] }>('/orders', {
+      params: { status: opts.status, limit: opts.limit },
+      headers: opts.authHeader,
+    });
+    return data.data;
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+/** Admin: transition an order's status. */
+export async function updateOrderStatus(
+  id: string,
+  status: string,
+  authHeader?: Record<string, string>,
+): Promise<Order> {
+  try {
+    const { data } = await client.patch<{ data: Order }>(
+      `/orders/${encodeURIComponent(id)}/status`,
+      { status },
+      { headers: authHeader },
+    );
+    return data.data;
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+/** Admin: hard-delete an order. */
+export async function deleteOrder(
+  id: string,
+  authHeader?: Record<string, string>,
+): Promise<void> {
+  try {
+    await client.delete(`/orders/${encodeURIComponent(id)}`, {
+      headers: authHeader,
+    });
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+/**
+ * Public: fire-and-forget page-view ping. Failures swallowed (we don't
+ * want analytics outages to break navigation) so this returns void.
+ */
+export async function trackPageView(payload: {
+  path: string;
+  visitorId: string;
+  referrer?: string;
+}): Promise<void> {
+  try {
+    await client.post('/admin/track', payload, { timeout: 4000 });
+  } catch {
+    // intentionally swallowed
+  }
+}
+
+/** Admin: list all newsletter subscribers. */
+export async function listSubscribers(
+  authHeader?: Record<string, string>,
+): Promise<Subscriber[]> {
+  try {
+    const { data } = await client.get<{ data: Subscriber[] }>(
+      '/admin/subscribers',
+      { headers: authHeader },
+    );
+    return data.data;
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+/** Admin: remove a subscriber by id. */
+export async function deleteSubscriber(
+  id: string,
+  authHeader?: Record<string, string>,
+): Promise<void> {
+  try {
+    await client.delete(`/admin/subscribers/${encodeURIComponent(id)}`, {
+      headers: authHeader,
+    });
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+export interface SentNewsletter {
+  id: string;
+  subject: string;
+  bodyHtml: string;
+  recipientCount: number;
+  createdAt: string;
+  sent?: boolean;
+}
+
+/** Admin: send a newsletter (records + counts; sending is a no-op here). */
+export async function sendNewsletter(
+  payload: { subject: string; bodyHtml: string },
+  authHeader?: Record<string, string>,
+): Promise<SentNewsletter> {
+  try {
+    const { data } = await client.post<{ data: SentNewsletter }>(
+      '/admin/newsletter',
+      payload,
+      { headers: authHeader },
+    );
+    return data.data;
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+/** Admin: past newsletter campaigns, newest first. */
+export async function listNewsletters(
+  authHeader?: Record<string, string>,
+): Promise<SentNewsletter[]> {
+  try {
+    const { data } = await client.get<{ data: SentNewsletter[] }>(
+      '/admin/newsletters',
+      { headers: authHeader },
+    );
+    return data.data;
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
+export interface ResetSummary {
+  orders: number;
+  subscribers: number;
+  pageViews: number;
+  newsletters: number;
+  productsReset: number;
+}
+
+/** Admin: nuke every collection. Body has a confirm token to avoid mis-clicks. */
+export async function resetEverything(
+  authHeader?: Record<string, string>,
+): Promise<ResetSummary> {
+  try {
+    const { data } = await client.post<{ data: ResetSummary }>(
+      '/admin/reset',
+      { confirm: 'RESET' },
+      { headers: authHeader },
+    );
+    return data.data;
+  } catch (err) {
+    unwrap(err);
+  }
+}
+
 export { client as apiClient };

@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Anton, Archivo_Black } from 'next/font/google';
 import { SceneRoot } from '@/components/scene/SceneRoot';
 import { ChromeRoot } from '@/components/layout/ChromeRoot';
 import { Preloader } from '@/components/ui/Preloader';
+import { PageViewTracker } from '@/components/analytics/PageViewTracker';
 import './globals.css';
 
 const inter = Inter({
@@ -111,6 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Preloader />
         <SceneRoot />
         <ChromeRoot>{children}</ChromeRoot>
+        <PageViewTracker />
         {/* Film grain overlay, pointer-none, overlay blend, fixed under nav */}
         <div aria-hidden className="grain-overlay" />
       </body>

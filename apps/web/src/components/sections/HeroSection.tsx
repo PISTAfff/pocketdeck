@@ -19,6 +19,7 @@ import { useEffect, useRef } from 'react';
 import { SplitText } from '@/components/ui/SplitText';
 import { useSceneStore } from '@/store/scene';
 import { scrollToHash } from '@/hooks/useLenis';
+import { StreetSprite } from '@/components/ui/StreetSprite';
 
 export function HeroSection() {
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
@@ -52,6 +53,49 @@ export function HeroSection() {
       <div
         aria-hidden
         className="halftone absolute top-12 right-[-4rem] h-[28rem] w-[28rem] rotate-12 opacity-40 [mask-image:radial-gradient(60%_60%_at_50%_50%,#000_0%,transparent_70%)]"
+      />
+
+      {/* Street-sprite scatter. Sits behind content (z-0) so they
+          decorate the dead space without blocking reading. */}
+      <StreetSprite
+        kind="bolt"
+        size={42}
+        color="ember"
+        rotate={-15}
+        hover="pulse"
+        className="absolute top-28 right-[10%] z-0"
+      />
+      <StreetSprite
+        kind="star"
+        size={28}
+        color="bone"
+        rotate={20}
+        hover="spin"
+        className="absolute top-[45%] right-[6%] z-0"
+      />
+      <StreetSprite
+        kind="x"
+        size={22}
+        color="mute"
+        rotate={12}
+        hover="wiggle"
+        className="absolute bottom-32 left-[55%] z-0 hidden md:inline-flex"
+      />
+      <StreetSprite
+        kind="dots"
+        size={56}
+        color="ember"
+        rotate={0}
+        hover="none"
+        className="absolute bottom-44 left-8 z-0 opacity-40 md:left-14"
+      />
+      <StreetSprite
+        kind="spark"
+        size={36}
+        color="ember"
+        rotate={0}
+        hover="spin"
+        className="absolute top-[8%] left-[45%] z-0 hidden md:inline-flex"
       />
 
       <div className="relative z-10 mx-auto grid w-full max-w-[1400px] gap-12 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-end md:gap-8">
