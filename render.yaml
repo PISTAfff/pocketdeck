@@ -15,13 +15,20 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    # The repo is a pnpm workspace. Render runs commands from the repo root.
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
-    startCommand: pnpm --filter @pocketdeck/api start
+    # The repo is a pnpm workspace; Render runs commands from the repo root.
+    # `corepack pnpm` runs the pnpm version pinned in package.json's
+    # `packageManager` field WITHOUT `corepack enable`, which fails on
+    # Render's read-only filesystem (it tries to symlink into /usr/bin).
+    buildCommand: corepack pnpm install --frozen-lockfile
+    startCommand: corepack pnpm --filter @pocketdeck/api start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      # Stops Corepack from blocking on a download confirmation prompt
+      # during Render's non-interactive build.
+      - key: COREPACK_ENABLE_DOWNLOAD_PROMPT
+        value: "0"
       - key: WEB_ORIGIN
         # Comma-separated. Replace with your real Vercel domain(s).
         sync: false
