@@ -59,6 +59,11 @@ export const env = {
     process.env.ADMIN_TOKEN_TTL_MS,
     1000 * 60 * 60 * 12, // 12h
   ),
+  // Render injects this on every web service: the public https URL the
+  // service is reachable at. We use it as the target for the self-ping
+  // keep-warm loop. Empty/missing means we're not on Render — skip the
+  // loop (no-op in local dev).
+  RENDER_EXTERNAL_URL: readString(process.env.RENDER_EXTERNAL_URL, ''),
 } as const;
 
 export type Env = typeof env;
