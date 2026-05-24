@@ -539,6 +539,35 @@ function OrderSuccess({
         <br />
         <span className="spray-text text-ember-500">the way.</span>
       </h2>
+
+      {/* Demo banner — front-and-center so nobody thinks they actually
+          bought a fingerboard. Sits between the headline and the courier
+          copy so it's the first paragraph the customer reads. */}
+      <div
+        className="w-full max-w-xl rounded-2xl border border-ember-500/40 px-5 py-4"
+        style={{ background: 'rgba(255, 91, 20, 0.08)' }}
+        role="note"
+      >
+        <p className="font-mono text-[10px] tracking-[0.28em] text-ember-300 uppercase">
+          Heads up — this is a demo
+        </p>
+        <p className="mt-2 font-sans text-[13px] leading-relaxed text-bone-100">
+          PocketDeck is a portfolio piece. Your order won&rsquo;t actually
+          ship, nobody will call, and no money was charged — every order is
+          a test of the flow. If you&rsquo;d like a site like this built for
+          you, reach me through my portfolio at{' '}
+          <a
+            href="https://pistasspot.com"
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono tracking-[0.06em] text-ember-400 underline-offset-4 transition-colors hover:text-ember-300 hover:underline"
+          >
+            pistasspot.com
+          </a>
+          .
+        </p>
+      </div>
+
       <p
         className="max-w-xl font-sans text-bone-50"
         style={{ fontSize: '1.0625rem', lineHeight: 'var(--leading-body)' }}

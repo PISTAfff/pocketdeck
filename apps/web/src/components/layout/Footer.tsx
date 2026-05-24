@@ -161,6 +161,30 @@ export function Footer() {
           </nav>
         </div>
 
+        {/* Portfolio notice — make it unmistakable that this is a demo. The
+            fine-print row below stays for the brand line; this row above it
+            handles the "not a real shop" disclosure and points at my work. */}
+        <div className="mt-8 flex flex-col items-start justify-between gap-3 border-t border-ember-500/20 pt-5 md:flex-row md:items-center">
+          <p className="max-w-2xl font-sans text-[12px] leading-relaxed text-bone-200">
+            <span className="font-mono tracking-[0.18em] text-ember-400 uppercase">
+              Demo project ·
+            </span>{' '}
+            PocketDeck is a portfolio showcase — nothing here ships, and every
+            order placed is a test. If you&rsquo;d like a site built in this
+            style, get in touch through my portfolio at{' '}
+            <a
+              href="https://pistasspot.com"
+              target="_blank"
+              rel="noreferrer"
+              data-cursor="link"
+              className="font-mono tracking-[0.08em] text-ember-400 underline-offset-4 transition-colors hover:text-ember-300 hover:underline"
+            >
+              pistasspot.com
+            </a>
+            .
+          </p>
+        </div>
+
         {/* Fine-print divider row, tighter spacing. */}
         <div className="mt-6 flex flex-col items-start justify-between gap-2 border-t border-bone-50/10 pt-4 text-[10px] opacity-60 md:flex-row md:items-center">
           <p className="font-mono tracking-[0.24em] text-bone-300 uppercase">
