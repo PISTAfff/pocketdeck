@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useProgress } from '@react-three/drei';
 import { pauseScroll, resumeScroll } from '@/hooks/useLenis';
+import { useSceneStore } from '@/store/scene';
 
 const MIN_DISPLAY_MS = 2000;
 const HOLD_AT_100_MS = 350;
@@ -30,6 +31,7 @@ export function Preloader() {
   const { progress, active } = useProgress();
   const [display, setDisplay] = useState(0);
   const [done, setDone] = useState(false);
+  const setPreloaderDone = useSceneStore((s) => s.setPreloaderDone);
   const mountedAtRef = useRef<number>(Date.now());
   const progressRef = useRef(100); // default 100 since the scene is procedural
   progressRef.current = progress > 0 ? progress : 100;
@@ -59,14 +61,20 @@ export function Preloader() {
 
   // Dismiss once (a) Drei has nothing left to load, (b) the elapsed time has
   // covered MIN_DISPLAY_MS so the counter has visibly reached 100, and (c) a
-  // brief hold at 100 has passed.
+  // brief hold at 100 has passed. Flipping `done` starts the fade-out AND
+  // signals the scene store so hero animations can start running — the two
+  // happen at the same instant so the preloader fading away and the hero
+  // text rising up overlap cleanly.
   useEffect(() => {
     if (active) return;
     const elapsed = Date.now() - mountedAtRef.current;
     const wait = Math.max(0, MIN_DISPLAY_MS - elapsed) + HOLD_AT_100_MS;
-    const id = window.setTimeout(() => setDone(true), wait);
+    const id = window.setTimeout(() => {
+      setDone(true);
+      setPreloaderDone(true);
+    }, wait);
     return () => window.clearTimeout(id);
-  }, [active]);
+  }, [active, setPreloaderDone]);
 
   // Lock page scroll while the preloader is visible. Lenis isn't initialised
   // yet when this component mounts (ChromeRoot wires it up after), so the

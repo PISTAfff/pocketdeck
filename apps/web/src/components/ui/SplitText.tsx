@@ -23,6 +23,13 @@ interface SplitTextProps {
   itemClassName?: string;
   /** If true, replays the reveal each time the element re-enters view. */
   once?: boolean;
+  /**
+   * Gate the reveal. When `false` the text stays in its `hidden` initial
+   * state and ignores in-view; when `true` it animates in (still respects
+   * `viewport` — i.e. won't animate until visible). Defaults to `true` so
+   * existing callers keep the original behaviour.
+   */
+  play?: boolean;
 }
 
 const containerVariants: Variants = {
@@ -52,6 +59,7 @@ export function SplitText({
   className,
   itemClassName,
   once = true,
+  play = true,
 }: SplitTextProps) {
   const pieces = useMemo(() => {
     if (by === 'word') {
@@ -66,11 +74,20 @@ export function SplitText({
     }));
   }, [children, by]);
 
+  // When `play` is false, force `animate="hidden"` so words stay clipped
+  // until the gate flips — Framer Motion will then transition them into
+  // the variants-driven visible state. When `play` is true we fall back
+  // to the original `whileInView` so the reveal still respects viewport
+  // for any future off-screen usage.
+  const motionTrigger = play
+    ? { whileInView: 'visible' as const }
+    : { animate: 'hidden' as const };
+
   return (
     <motion.span
       className={clsx('inline-block', className)}
       initial="hidden"
-      whileInView="visible"
+      {...motionTrigger}
       viewport={{ once, amount: 0.3 }}
       variants={containerVariants}
       custom={{ stagger, delay }}

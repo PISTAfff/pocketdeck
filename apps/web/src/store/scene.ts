@@ -116,6 +116,15 @@ export interface SceneState {
    */
   wizardPhase: 'package' | 'edit' | 'review' | null;
   setWizardPhase: (p: 'package' | 'edit' | 'review' | null) => void;
+
+  /**
+   * True once the preloader has hit 100% and begun fading out. Gates
+   * first-paint hero animations so they don't burn through while the
+   * preloader is still covering the screen — without this the SplitText
+   * reveal completes before the user ever sees the hero.
+   */
+  preloaderDone: boolean;
+  setPreloaderDone: (v: boolean) => void;
 }
 
 const DEFAULT_SELECTION: ConfigurationSelection = {
@@ -226,4 +235,7 @@ export const useSceneStore = create<SceneState>((set) => ({
 
   wizardPhase: null,
   setWizardPhase: (p) => set({ wizardPhase: p }),
+
+  preloaderDone: false,
+  setPreloaderDone: (v) => set({ preloaderDone: v }),
 }));
