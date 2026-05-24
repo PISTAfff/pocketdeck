@@ -18,9 +18,12 @@ import { env } from './env.js';
 const PING_INTERVAL_MS = 14 * 60 * 1000;
 const PING_TIMEOUT_MS = 10_000;
 
+let pingHandle: ReturnType<typeof setInterval> | null = null;
+
 export function startSelfPing(): void {
   const base = env.RENDER_EXTERNAL_URL.replace(/\/+$/, '');
   if (!base) return;
+  if (pingHandle) return; // already running, don't double-schedule
   const url = `${base}/api/health`;
 
   const ping = async (): Promise<void> => {
@@ -38,10 +41,18 @@ export function startSelfPing(): void {
 
   // Skip the first immediate ping — the dyno is fresh, no warming
   // needed. Wait one interval, then ping every interval after.
-  setInterval(() => {
+  pingHandle = setInterval(() => {
     void ping();
   }, PING_INTERVAL_MS);
   process.stdout.write(
     `[self-ping] enabled, pinging ${url} every ${PING_INTERVAL_MS / 60_000} min\n`,
   );
+}
+
+/** Clears the keep-warm interval. Called from the graceful-shutdown path. */
+export function stopSelfPing(): void {
+  if (pingHandle) {
+    clearInterval(pingHandle);
+    pingHandle = null;
+  }
 }

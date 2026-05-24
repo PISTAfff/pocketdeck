@@ -10,8 +10,8 @@ import type {
   Order as OrderT,
   ConfigurationSelection,
   OrderCustomer,
-  OrderStatus,
 } from '@pocketdeck/types';
+import { ORDER_STATUSES } from '@pocketdeck/types';
 
 const SelectionSchema = new Schema<ConfigurationSelection>(
   {
@@ -32,14 +32,6 @@ const CustomerSchema = new Schema<OrderCustomer>(
   },
   { _id: false },
 );
-
-const ORDER_STATUSES: OrderStatus[] = [
-  'pending',
-  'confirmed',
-  'shipped',
-  'delivered',
-  'cancelled',
-];
 
 const OrderSchema = new Schema<OrderT>(
   {
@@ -63,7 +55,7 @@ const OrderSchema = new Schema<OrderT>(
     customer: { type: CustomerSchema, required: true },
     status: {
       type: String,
-      enum: ORDER_STATUSES,
+      enum: [...ORDER_STATUSES],
       required: true,
       default: 'pending',
     },

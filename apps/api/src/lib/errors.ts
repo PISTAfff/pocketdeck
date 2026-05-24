@@ -12,6 +12,8 @@ export const ErrorCode = {
   OUT_OF_STOCK: 'OUT_OF_STOCK',
   RATE_LIMITED: 'RATE_LIMITED',
   BAD_REQUEST: 'BAD_REQUEST',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   INTERNAL: 'INTERNAL',
 } as const;
 
@@ -55,6 +57,14 @@ export class ApiError extends Error {
 
   static badRequest(message = 'Bad request.'): ApiError {
     return new ApiError(400, ErrorCode.BAD_REQUEST, message);
+  }
+
+  static unauthorized(message = 'Authentication required.'): ApiError {
+    return new ApiError(401, ErrorCode.UNAUTHORIZED, message);
+  }
+
+  static serviceUnavailable(message = 'Service temporarily unavailable.'): ApiError {
+    return new ApiError(503, ErrorCode.SERVICE_UNAVAILABLE, message);
   }
 
   static internal(message = 'Internal server error.'): ApiError {

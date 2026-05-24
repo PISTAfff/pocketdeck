@@ -11,6 +11,7 @@
 import mongoose from 'mongoose';
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import sanitizeHtmlLib from 'sanitize-html';
 import { OrderModel } from '../models/Order.js';
 import { PageViewModel } from '../models/PageView.js';
 import { SubscriberModel } from '../models/Subscriber.js';
@@ -18,7 +19,7 @@ import { NewsletterModel } from '../models/Newsletter.js';
 import { ProductModel } from '../models/Product.js';
 import { isConnected } from '../lib/db.js';
 import { ApiError } from '../lib/errors.js';
-import { postRateLimiter } from '../middleware/rateLimit.js';
+import { analyticsRateLimiter, postRateLimiter } from '../middleware/rateLimit.js';
 import {
   issueAdminToken,
   passwordsMatch,
@@ -461,6 +462,7 @@ adminRouter.get('/admin/analytics', requireAdmin, async (_req, res, next) => {
  */
 adminRouter.post(
   '/admin/track',
+  analyticsRateLimiter,
   (req: Request, res: Response, next: NextFunction) => {
     void (async () => {
       try {
@@ -682,44 +684,45 @@ adminRouter.post('/admin/reset', requireAdmin, async (req, res, next) => {
 });
 
 /**
- * Conservative HTML sanitizer for newsletter bodies.
+ * HTML sanitizer for newsletter bodies.
  *
- * Allows only inline formatting tags + headings + lists + links and
- * strips all event handlers / javascript: hrefs. Not a substitute for
- * a hardened library if user-supplied HTML ever flows back into the
- * public site, but the dashboard renders this via `dangerouslySetInner
- * HTML` for the preview and the data is otherwise stored as-is — so
- * this layer is the line of defence.
+ * Uses the `sanitize-html` library (battle-tested against common XSS
+ * vectors — entity encoding, malformed tags, javascript: URLs, etc.)
+ * instead of the hand-rolled regex we used to have here. The allow-list
+ * is intentionally narrow: inline formatting, headings, lists, and
+ * links with safe schemes only.
  */
 function sanitizeHtml(input: string): string {
-  const allowedTags = new Set([
-    'p',
-    'br',
-    'b',
-    'strong',
-    'i',
-    'em',
-    'u',
-    'h1',
-    'h2',
-    'h3',
-    'ul',
-    'ol',
-    'li',
-    'a',
-    'div',
-    'span',
-    'blockquote',
-  ]);
-  // Strip <script> / <style> blocks entirely (including their contents).
-  let out = input.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '');
-  // Strip every on* attribute and javascript: hrefs/srcs.
-  out = out.replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '');
-  out = out.replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '');
-  out = out.replace(/javascript\s*:/gi, '');
-  // Drop tags that aren't in the allow list (keep their text content).
-  out = out.replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (match, tag: string) => {
-    return allowedTags.has(tag.toLowerCase()) ? match : '';
+  return sanitizeHtmlLib(input, {
+    allowedTags: [
+      'p',
+      'br',
+      'b',
+      'strong',
+      'i',
+      'em',
+      'u',
+      'h1',
+      'h2',
+      'h3',
+      'ul',
+      'ol',
+      'li',
+      'a',
+      'div',
+      'span',
+      'blockquote',
+    ],
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedSchemesAppliedToAttributes: ['href'],
+    disallowedTagsMode: 'discard',
+    transformTags: {
+      // Always force noopener on external links so a malicious href can't
+      // grab window.opener from the dashboard preview.
+      a: sanitizeHtmlLib.simpleTransform('a', { rel: 'noopener noreferrer' }),
+    },
   });
-  return out;
 }

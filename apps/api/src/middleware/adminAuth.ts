@@ -73,7 +73,7 @@ export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
   const header = req.header('authorization') ?? '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   if (!isValidAdminToken(token)) {
-    return next(ApiError.notFound('Resource not found.'));
+    return next(ApiError.unauthorized('Admin authentication required.'));
   }
   next();
 }

@@ -1,10 +1,14 @@
 /**
  * Environment variable reader/validator.
  *
- * Loads from `.env` (via dotenv) and exposes a typed `env` object. We use
- * sensible defaults so the API can boot without a `.env` file in dev.
+ * Loads from `.env` (via dotenv) and exposes a typed `env` object. Dev gets
+ * sensible defaults so the API boots without any wiring; production REFUSES
+ * to boot when a security-sensitive variable is unset or matches the dev
+ * default. That tradeoff lives in `assertProductionEnv()` below.
  */
 import 'dotenv/config';
+
+const DEV_ADMIN_PASSWORD = 'pocketdeck-admin';
 
 function parseInteger(value: string | undefined, fallback: number): number {
   if (value === undefined || value === '') return fallback;
@@ -51,10 +55,11 @@ export const env = {
   ),
   RATE_LIMIT_MAX: parseInteger(process.env.RATE_LIMIT_MAX, 10),
   RATE_LIMIT_WINDOW_MS: parseInteger(process.env.RATE_LIMIT_WINDOW_MS, 60_000),
-  // Shared secret for the admin dashboard. In a real deployment this
-  // would come from a secrets manager; here we accept a dev default so
-  // the dashboard can be exercised locally without env wiring.
-  ADMIN_PASSWORD: readString(process.env.ADMIN_PASSWORD, 'pocketdeck-admin'),
+  // Shared secret for the admin dashboard. In dev we fall back to a known
+  // string so the dashboard can be exercised locally without env wiring.
+  // In production, `assertProductionEnv()` refuses to start if it's still
+  // the dev default.
+  ADMIN_PASSWORD: readString(process.env.ADMIN_PASSWORD, DEV_ADMIN_PASSWORD),
   ADMIN_TOKEN_TTL_MS: parseInteger(
     process.env.ADMIN_TOKEN_TTL_MS,
     1000 * 60 * 60 * 12, // 12h
@@ -67,3 +72,39 @@ export const env = {
 } as const;
 
 export type Env = typeof env;
+
+/**
+ * Fail-loud env validation for production. Called once at boot from
+ * `index.ts` before the HTTP server starts. Throws on any condition that
+ * would either reduce security (default admin password) or leave the API
+ * unable to do useful work (no Mongo URI configured). Dev/test environments
+ * are unaffected.
+ */
+export function assertProductionEnv(): void {
+  if (!env.isProduction) return;
+  const fatal: string[] = [];
+
+  if (env.ADMIN_PASSWORD === DEV_ADMIN_PASSWORD) {
+    fatal.push(
+      'ADMIN_PASSWORD is unset (or still the dev default). Refusing to boot in production.',
+    );
+  }
+  if (env.ADMIN_PASSWORD.length < 12) {
+    fatal.push(
+      `ADMIN_PASSWORD is too short (${env.ADMIN_PASSWORD.length} chars). Require at least 12.`,
+    );
+  }
+  if (!process.env.MONGODB_URI) {
+    fatal.push(
+      'MONGODB_URI is unset. Production deployments must configure a real database.',
+    );
+  }
+  if (env.WEB_ORIGINS.length === 0) {
+    fatal.push('WEB_ORIGIN is unset. CORS would block every request.');
+  }
+
+  if (fatal.length > 0) {
+    for (const msg of fatal) process.stderr.write(`[env] FATAL: ${msg}\n`);
+    throw new Error('Production environment misconfigured — see logs above.');
+  }
+}

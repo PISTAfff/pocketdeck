@@ -158,7 +158,21 @@ export interface ConfigurationSelection {
   grip: GripPattern;
 }
 
-export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+/** Single source of truth for the order status lifecycle. Iterate this
+ *  in routes / UI instead of redeclaring the string list. */
+export const ORDER_STATUSES = [
+  'pending',
+  'confirmed',
+  'shipped',
+  'delivered',
+  'cancelled',
+] as const;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/** Type guard for runtime validation (e.g. PATCH body). */
+export function isOrderStatus(v: unknown): v is OrderStatus {
+  return typeof v === 'string' && (ORDER_STATUSES as readonly string[]).includes(v);
+}
 
 export interface OrderCustomer {
   name: string;
