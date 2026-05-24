@@ -82,6 +82,7 @@ export function OrderSection() {
   const setActiveSection = useSceneStore((s) => s.setActiveSection);
   const selections = useSceneStore((s) => s.selections);
   const packageSize = useSceneStore((s) => s.packageSize);
+  const activeSkateIndex = useSceneStore((s) => s.activeSkateIndex);
   const product = useConfiguratorStore((s) => s.product);
   const sectionRef = useRef<HTMLElement | null>(null);
 
@@ -450,6 +451,7 @@ export function OrderSection() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.45, ease: [0.65, 0, 0.35, 1] }}
               >
+                {/* 3D scene — full-bleed behind the chrome. */}
                 <motion.div
                   initial={{ scale: 0.92, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -459,6 +461,76 @@ export function OrderSection() {
                 >
                   <OrderPreview expanded />
                 </motion.div>
+
+                {/*
+                  Mobile overlay chrome — a proper header bar on top + a
+                  structured info strip on the bottom so the modal reads as
+                  an app-style sheet rather than a bare 3D scene. Hidden
+                  from `md` upward where the minimal floating Back pill
+                  feels right against the wide canvas.
+                */}
+                <motion.header
+                  initial={{ y: -16, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1, transition: { delay: 0.2 } }}
+                  exit={{ y: -16, opacity: 0 }}
+                  className="absolute inset-x-0 top-0 z-10 flex items-center justify-between border-b border-bone-50/10 bg-ink-950/80 px-4 py-3 backdrop-blur-xl md:hidden"
+                  style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-mono text-[9px] tracking-[0.32em] text-ember-400 uppercase">
+                      Live preview
+                    </span>
+                    <span className="font-mono text-[10px] tracking-[0.28em] text-bone-200 uppercase">
+                      {packageSize}-board package
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewExpanded(false)}
+                    data-cursor="link"
+                    aria-label="Close fullscreen preview"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-ink-900/80 text-bone-50 ring-1 ring-bone-50/15 transition-colors hover:bg-ink-900"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                      <path
+                        d="M3 3l8 8M11 3l-8 8"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                </motion.header>
+
+                <motion.footer
+                  initial={{ y: 16, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1, transition: { delay: 0.3 } }}
+                  exit={{ y: 16, opacity: 0 }}
+                  className="pointer-events-none absolute inset-x-0 bottom-0 z-10 border-t border-bone-50/10 bg-ink-950/75 px-4 py-3 backdrop-blur-xl md:hidden"
+                  style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-mono text-[9px] tracking-[0.28em] text-bone-300 uppercase">
+                        Board {activeSkateIndex + 1} · configured
+                      </span>
+                      <span className="font-mono text-[11px] tracking-[0.18em] text-bone-50">
+                        {selections[activeSkateIndex]?.deck}
+                        {' · '}
+                        {selections[activeSkateIndex]?.wheel}
+                        {' · '}
+                        {selections[activeSkateIndex]?.truck}
+                      </span>
+                    </div>
+                    <span className="rounded-full bg-bone-50/5 px-3 py-1 font-mono text-[9px] tracking-[0.24em] text-bone-300 uppercase ring-1 ring-bone-50/10">
+                      Drag · pinch
+                    </span>
+                  </div>
+                </motion.footer>
+
+                {/* Desktop chrome — minimalist floating Back pill +
+                    bottom-right package meta. Hidden below `md` because
+                    the structured mobile bars above replace them. */}
                 <motion.button
                   type="button"
                   onClick={() => setPreviewExpanded(false)}
@@ -467,7 +539,7 @@ export function OrderSection() {
                   initial={{ y: -16, opacity: 0 }}
                   animate={{ y: 0, opacity: 1, transition: { delay: 0.2 } }}
                   exit={{ y: -16, opacity: 0 }}
-                  className="absolute top-6 left-6 z-10 inline-flex items-center gap-3 rounded-full bg-ink-900/85 px-5 py-3 font-mono text-xs tracking-[0.28em] text-bone-50 uppercase ring-1 ring-bone-50/15 backdrop-blur-xl transition-colors hover:bg-ink-900 md:top-10 md:left-10"
+                  className="absolute top-10 left-10 z-10 hidden items-center gap-3 rounded-full bg-ink-900/85 px-5 py-3 font-mono text-xs tracking-[0.28em] text-bone-50 uppercase ring-1 ring-bone-50/15 backdrop-blur-xl transition-colors hover:bg-ink-900 md:inline-flex"
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <path
@@ -480,12 +552,11 @@ export function OrderSection() {
                   </svg>
                   Back
                 </motion.button>
-                {/* Bottom-right meta */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1, transition: { delay: 0.35 } }}
                   exit={{ opacity: 0 }}
-                  className="pointer-events-none absolute right-6 bottom-6 hidden font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase md:right-10 md:bottom-10 md:block"
+                  className="pointer-events-none absolute right-10 bottom-10 z-10 hidden font-mono text-[10px] tracking-[0.32em] text-bone-300 uppercase md:block"
                 >
                   <span className="text-bone-100">
                     {packageSize}-board package

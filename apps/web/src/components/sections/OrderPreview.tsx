@@ -589,12 +589,11 @@ export function OrderPreview({ expanded }: OrderPreviewProps) {
         )}
       </Canvas>
 
-      {/* Helper hint, only while expanded. Wording shifts on touch where
-          there's no scroll wheel, and the pill is pushed up off the
-          phone's bottom edge so the home-bar doesn't hide it. */}
+      {/* Desktop helper hint, hidden on mobile because OrderSection's
+          structured footer carries the gesture copy there. */}
       {expanded && (
-        <div className="pointer-events-none absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-ink-900/70 px-4 py-2 font-mono text-[10px] tracking-[0.24em] text-bone-200 uppercase ring-1 ring-bone-50/10 backdrop-blur sm:bottom-6 sm:tracking-[0.28em]">
-          {narrow ? 'Drag · pinch · double-tap' : 'Drag to rotate · scroll to zoom'}
+        <div className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full bg-ink-900/70 px-4 py-2 font-mono text-[10px] tracking-[0.28em] text-bone-200 uppercase ring-1 ring-bone-50/10 backdrop-blur md:block">
+          Drag to rotate · scroll to zoom
         </div>
       )}
     </div>
