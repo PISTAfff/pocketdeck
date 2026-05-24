@@ -1,9 +1,16 @@
 /**
  * Typed Axios client for the PocketDeck API.
  *
- * All requests go through `/api/...` which Next.js dev-proxies to the Express
- * backend (see `next.config.ts`). 422 responses are surfaced as `ApiValidationError`
- * so callers can map `errors[].field` (dot path) to inputs.
+ * Requests go straight to the API origin from the browser — no Next.js
+ * rewrite proxy in front. The origin comes from `NEXT_PUBLIC_API_ORIGIN`,
+ * which is baked at build time:
+ *   - dev:  http://localhost:4000 (the Express dev server)
+ *   - prod: the deployed API host (e.g. https://pocketdeck-api.onrender.com)
+ * CORS on the API (see `apps/api/src/app.ts`) explicitly whitelists the
+ * web origin(s) via the `WEB_ORIGIN` env var, so cross-origin requests
+ * succeed without credentials. 422 responses are surfaced as
+ * `ApiValidationError` so callers can map `errors[].field` (dot path) to
+ * inputs.
  */
 import axios, { AxiosError, AxiosInstance } from 'axios';
 import type {
@@ -19,8 +26,15 @@ import type {
   Subscriber,
 } from '@pocketdeck/types';
 
+// Trailing slash on the origin would produce `…//api/...` after the
+// concat below, so normalize it away. Empty string means "same origin",
+// kept as a fallback only — production builds should always have the env
+// var set.
+const RAW_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:4000';
+const API_ORIGIN = RAW_ORIGIN.replace(/\/+$/, '');
+
 const client: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: `${API_ORIGIN}/api`,
   headers: { 'Content-Type': 'application/json' },
   timeout: 15_000,
 });

@@ -1,8 +1,6 @@
 import path from 'node:path';
 import type { NextConfig } from 'next';
 
-const apiOrigin = process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:4000';
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Hide the floating dev badge in the bottom-left so the design is uninterrupted in dev.
@@ -22,14 +20,10 @@ const nextConfig: NextConfig = {
       'gsap',
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiOrigin}/api/:path*`,
-      },
-    ];
-  },
+  // No `/api/*` rewrite here. The browser talks to the API origin
+  // directly via NEXT_PUBLIC_API_ORIGIN (see `src/lib/api.ts`), so a
+  // server-side proxy would just add a hop. CORS on the API handles the
+  // cross-origin handshake.
 };
 
 export default nextConfig;
