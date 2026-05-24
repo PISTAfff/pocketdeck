@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import FocusTrap from 'focus-trap-react';
 import Link from 'next/link';
 import type { CreateOrderRequest, Governorate, Order } from '@pocketdeck/types';
 import { useSceneStore } from '@/store/scene';
@@ -443,8 +444,19 @@ export function OrderSection() {
         createPortal(
           <AnimatePresence>
             {previewExpanded && (
+              <FocusTrap
+                focusTrapOptions={{
+                  initialFocus: false,
+                  allowOutsideClick: true,
+                  escapeDeactivates: true,
+                  onDeactivate: () => setPreviewExpanded(false),
+                }}
+              >
               <motion.div
                 key="preview-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Fullscreen deck preview"
                 className="fixed inset-0 z-[120] bg-ink-950"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -563,6 +575,7 @@ export function OrderSection() {
                   </span>
                 </motion.div>
               </motion.div>
+              </FocusTrap>
             )}
           </AnimatePresence>,
           portalTarget,

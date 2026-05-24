@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono, Anton, Archivo_Black } from 'next/font/google';
-import { SceneRoot } from '@/components/scene/SceneRoot';
 import { ChromeRoot } from '@/components/layout/ChromeRoot';
-import { Preloader } from '@/components/ui/Preloader';
+import { HomeOnlyChrome } from '@/components/layout/HomeOnlyChrome';
 import { PageViewTracker } from '@/components/analytics/PageViewTracker';
 import './globals.css';
 
@@ -109,8 +108,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </defs>
         </svg>
 
-        <Preloader />
-        <SceneRoot />
+        {/* Preloader + persistent 3D canvas mount only on the home page,
+            lazy-loaded so admin / about / faq / track-order don't pull
+            Three.js + drei + postprocessing into their bundles. */}
+        <HomeOnlyChrome />
         <ChromeRoot>{children}</ChromeRoot>
         <PageViewTracker />
         {/* Film grain overlay, pointer-none, overlay blend, fixed under nav */}
