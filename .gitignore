@@ -25,6 +25,10 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Vercel CLI local linking + build output
+.vercel/
+.tmp-*
+
 # Mongo dump
 *.bson
 

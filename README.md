@@ -217,70 +217,83 @@ procedural so progress is effectively instant, we enforce a minimum
 
 ## Deployment
 
-The project deploys as **two pieces**, not one:
+Both apps run on **Vercel**, backed by **MongoDB Atlas**:
 
-| Piece          | Where                | Why                                                                       |
-| -------------- | -------------------- | ------------------------------------------------------------------------- |
-| `apps/web`     | **Vercel**           | Next.js app, perfect fit                                                  |
-| `apps/api`    | **Render** (free)    | Long-running Express + Mongoose connection pool, doesn't fit serverless  |
-| MongoDB        | **MongoDB Atlas** (free M0) | Managed Mongo cluster the API connects to                          |
+| Piece          | Where                       | How                                                          |
+| -------------- | --------------------------- | ----------------------------------------------------------- |
+| `apps/web`     | **Vercel** project (root `apps/web`) | Next.js app, framework auto-detected               |
+| `apps/api`     | **Vercel** project (root = repo root) | Express wrapped in a serverless function via `api/index.ts` |
+| MongoDB        | **MongoDB Atlas** (free M0) | Managed Mongo cluster both deployments connect to           |
 
-Vercel can't host the Express API as-is — its serverless functions don't suit
-a stateful Express server with a Mongo pool and rate-limit state. If you
-really need single-host, the API would have to be ported to Next.js Route
-Handlers.
+The API is the same Express app as local dev — `createApp()` from
+`apps/api/src/app.ts` — wrapped by `api/index.ts` (repo root), which exports
+a Node `(req, res)` handler instead of calling `app.listen()`. The Mongo
+connection and built app are memoized in module scope so a warm instance
+reuses them; only cold starts pay the connect cost. The root `vercel.json`
+rewrites every path to that function, and Express routes by the original URL.
+
+> The old `render.yaml` Blueprint is left in the repo for reference but is
+> **inert** — nothing reads it now that the API is on Vercel.
 
 ### 1. MongoDB Atlas
 
 1. Create a free **M0** cluster on [mongodb.com/atlas](https://www.mongodb.com/atlas).
 2. Add a database user (Username + Password auth) — copy these.
-3. Network Access → Add IP → `0.0.0.0/0` (Render's outbound IPs are dynamic
-   on the free plan; lock this down if you upgrade).
+3. Network Access → Add IP → `0.0.0.0/0` (Vercel's serverless egress IPs are
+   dynamic; lock this down with a private-link setup if you upgrade).
 4. Connect → Drivers → grab the `mongodb+srv://…` connection string. Replace
    `<password>` with the one you set, and append `/pocketdeck` as the DB name.
 
-### 2. API on Render
+### 2. API on Vercel (serverless)
 
-This repo ships a `render.yaml` Blueprint at the root.
-
-1. Push the repo to GitHub.
-2. In Render: **New → Blueprint**, point at the repo. Render reads
-   `render.yaml` and creates the `pocketdeck-api` service.
-3. Under the service → **Environment**, set the three secrets the blueprint
-   declares (`sync: false`):
-   - `MONGODB_URI` — from Atlas, above.
-   - `ADMIN_PASSWORD` — a strong secret. This replaces the dev default.
-   - `WEB_ORIGIN` — leave blank for now, fill in after Vercel gives you a URL.
-4. Deploy. When it's green, hit `https://<your-service>.onrender.com/api/health`
-   and you should see `{"status":"ok"}`.
-5. Seed the catalog by running the seed script once locally pointed at the
-   Atlas URI, OR add a Render **shell** session and run
-   `pnpm --filter @pocketdeck/api seed`.
+1. In Vercel: **Add New… → Project**, import the GitHub repo.
+2. **Root Directory** → repository root (NOT `apps/web`) so pnpm resolves the
+   workspace and symlinks `@pocketdeck/types`. Vercel reads the root
+   `vercel.json`.
+3. **Framework Preset**: Other (the root `vercel.json` sets `framework: null`).
+4. **Environment Variables** — the API refuses to boot in production without
+   these, so set them before the first request:
+   - `MONGODB_URI` — the Atlas string from step 1. **Required.**
+   - `ADMIN_PASSWORD` — a strong secret, **≥12 chars and NOT** the dev default
+     `pocketdeck-admin`. **Required.**
+   - `WEB_ORIGIN` — the web app's Vercel domain(s), comma-separated for
+     previews, e.g. `https://pocketdeck.vercel.app`. **Required for CORS.**
+   - `NODE_ENV` = `production`
+   - `RATE_LIMIT_MAX` = `10`, `RATE_LIMIT_WINDOW_MS` = `60000`
+   - `ADMIN_TOKEN_TTL_MS` = `43200000`
+   - Do **not** set `RENDER_EXTERNAL_URL` (Render-only keep-warm).
+5. Deploy. Hit `https://<your-api>.vercel.app/api/health` → `{"status":"ok"}`.
+6. Seed the catalog once, locally, pointed at Atlas:
+   `MONGODB_URI=<atlas> pnpm --filter @pocketdeck/api seed`.
 
 ### 3. Web on Vercel
 
-1. In Vercel: **Add New… → Project**, import the GitHub repo.
-2. **Root Directory** → `apps/web`. (Critical for the monorepo — Vercel reads
-   `apps/web/vercel.json` from there.)
+1. **Add New… → Project** again, same repo, as a **separate** project.
+2. **Root Directory** → `apps/web`. Vercel reads `apps/web/vercel.json`.
 3. **Framework Preset**: Next.js (auto-detected).
 4. **Environment Variables**:
-   - `NEXT_PUBLIC_API_ORIGIN` = `https://<your-render-service>.onrender.com`
-5. Deploy.
-6. Once Vercel gives you a production URL (e.g. `pocketdeck.vercel.app`), go
-   back to Render and set `WEB_ORIGIN` to it. For preview-deploy CORS, you
-   can pass a comma-separated list:
-   `WEB_ORIGIN=https://pocketdeck.vercel.app,https://pocketdeck-git-main-<team>.vercel.app`
+   - `NEXT_PUBLIC_API_ORIGIN` = the API project's URL from step 2
+     (e.g. `https://pocketdeck-api.vercel.app`). Baked at build time — a
+     change needs a redeploy.
+5. Deploy, then make sure the API's `WEB_ORIGIN` lists this project's domain.
 
 ### 4. Gotchas
 
-- **Cold starts**: Render's free tier spins the API down after 15 min idle.
-  First request after a nap takes ~30s. Upgrade to a paid plan (or self-host)
-  if that matters.
-- **Rate limit + trust proxy**: the API sets `app.set('trust proxy', 1)` so
-  `req.ip` resolves to the real client through Render's proxy, not the proxy
-  itself. Don't remove that without re-thinking rate limiting.
-- **Static assets / preloader**: the preloader has a 1.2s minimum display
-  window, which masks Vercel's first-request CDN warmup nicely.
+- **Cold starts**: a Vercel function that's been idle cold-starts in ~1–2s
+  (vs Render's ~30s). The preloader's 1.2s minimum display window largely
+  masks it on the home page.
+- **No background work on serverless**: the Render keep-warm self-ping and any
+  boot-time seeding don't run — that's why `api/index.ts` imports `app.ts`,
+  not `index.ts`. Seed Atlas manually.
+- **Rate limiting is per-instance**: `express-rate-limit` uses an in-memory
+  store, so limits are per warm lambda, not global. Fine for a portfolio;
+  swap to a shared store (Redis/Upstash) if you need true global limits.
+- **Trust proxy**: the app sets `app.set('trust proxy', 1)` so `req.ip` is the
+  real client through Vercel's proxy. Don't remove it.
+- **Build error "No Output Directory"**: if Vercel complains, the API project
+  is being treated as a static site — confirm Framework Preset is **Other** /
+  `framework: null` and there's no stray build command. The function in `api/`
+  is the whole deployment.
 - **Mongo on Atlas free tier** is small (512 MB). The seed inserts the
   product + 180 SKU stock; a couple thousand orders fit comfortably.
 
