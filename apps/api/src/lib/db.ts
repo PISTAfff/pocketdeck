@@ -20,7 +20,11 @@ export async function connect(): Promise<boolean> {
   if (connected) return true;
   try {
     await mongoose.connect(env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 3000,
+      // 8s (was 3s): on serverless, a cold function + an idle Atlas M0 can
+      // take several seconds to establish the first connection. 3s timed
+      // out before Atlas woke, so the first request after idle 404'd.
+      // 8s stays comfortably inside Vercel's 10s function budget.
+      serverSelectionTimeoutMS: 8000,
     });
     connected = true;
     return true;

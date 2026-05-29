@@ -22,13 +22,13 @@
  */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createApp } from './app.js';
-import { connect } from './lib/db.js';
+import { connect, isConnected } from './lib/db.js';
 import { assertProductionEnv } from './lib/env.js';
 
 type NodeHandler = (req: IncomingMessage, res: ServerResponse) => void;
 
 let app: ReturnType<typeof createApp> | undefined;
-let connectOnce: Promise<unknown> | undefined;
+let connectPromise: Promise<boolean> | undefined;
 
 function getApp(): ReturnType<typeof createApp> {
   if (!app) {
@@ -38,11 +38,31 @@ function getApp(): ReturnType<typeof createApp> {
   return app;
 }
 
+/**
+ * Ensure Mongo is connected before handling a request.
+ *
+ * - Short-circuits when already connected (the warm path — cheap sync check).
+ * - Caches the in-flight connect promise so concurrent cold requests don't
+ *   each kick off their own `mongoose.connect`.
+ * - Crucially, clears the cached promise if the attempt did NOT connect, so
+ *   the next request retries instead of being stranded on a resolved-false
+ *   promise. Caching the failure was why the first cold hit 404'd while warm
+ *   hits succeeded.
+ */
+async function ensureConnected(): Promise<void> {
+  if (isConnected()) return;
+  if (!connectPromise) {
+    connectPromise = connect().finally(() => {
+      if (!isConnected()) connectPromise = undefined;
+    });
+  }
+  await connectPromise;
+}
+
 export default async function handler(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
-  if (!connectOnce) connectOnce = connect();
-  await connectOnce;
+  await ensureConnected();
   (getApp() as unknown as NodeHandler)(req, res);
 }
