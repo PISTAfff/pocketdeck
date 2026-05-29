@@ -3,7 +3,7 @@
   "version": 2,
   "framework": null,
   "installCommand": "corepack pnpm install --frozen-lockfile",
-  "buildCommand": "echo 'No build step — the API is bundled as a serverless function by @vercel/node'",
+  "buildCommand": "corepack pnpm exec esbuild apps/api/src/serverless.ts --bundle --platform=node --format=esm --target=node20 --outfile=api/_app.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" && mkdir -p public",
   "outputDirectory": "public",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }
