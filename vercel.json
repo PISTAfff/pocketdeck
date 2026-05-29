@@ -3,5 +3,7 @@
   "version": 2,
   "framework": null,
   "installCommand": "corepack pnpm install --frozen-lockfile",
+  "buildCommand": "echo 'No build step — the API is bundled as a serverless function by @vercel/node'",
+  "outputDirectory": "public",
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }
