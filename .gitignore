@@ -10,6 +10,8 @@ out/
 *.tsbuildinfo
 
 # Env
+.env
+.env.local
 .env.*.local
 
 # Logs
@@ -34,4 +36,3 @@ api/_app.mjs
 
 # Test
 coverage/
-config.bat
