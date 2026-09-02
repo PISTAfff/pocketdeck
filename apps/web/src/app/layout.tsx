@@ -40,19 +40,26 @@ export const metadata: Metadata = {
   title: 'PocketDeck, fingerboard in your pocket',
   description:
     'A 96mm fingerboard skate built for the desk. Configure your deck, wheels, trucks and grip.',
-  metadataBase: new URL('http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pocketdeck.pistasspot.com'),
   openGraph: {
     title: 'PocketDeck',
     description: 'A 96mm fingerboard skate built for the desk.',
     type: 'website',
+    siteName: 'PocketDeck',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'PocketDeck, a skatepark in your pocket' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'PocketDeck',
     description: 'A 96mm fingerboard skate built for the desk.',
+    images: ['/og.png'],
   },
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
   },
 };
 
